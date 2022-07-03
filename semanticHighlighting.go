@@ -100,6 +100,9 @@ func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
 }
 func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	t.add(newHightlightedToken(token.NewRange(d.Name, d.Name), protocol.SemanticTokenTypeVariable, nil))
+	for _, param := range d.ParamNames {
+		t.add(newHightlightedToken(token.NewRange(param, param), protocol.SemanticTokenTypeParameter, nil))
+	}
 	return d.Body.Accept(t)
 }
 
@@ -173,6 +176,7 @@ func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+	t.add(newHightlightedToken(token.NewRange(s.Name, s.Name), protocol.SemanticTokenTypeVariable, nil))
 	return s.Rhs.Accept(t)
 }
 func (t *semanticTokenizer) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {

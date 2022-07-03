@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
@@ -13,7 +14,10 @@ import (
 var currentAst *ast.Ast
 var currentTokens []token.Token
 
+var parseMutex = sync.Mutex{}
+
 func parse() (err error) {
+	parseMutex.Lock()
 	activeDoc, ok := getDocument(activeDocument)
 	if !ok {
 		return errors.New("activeDocument not in document map")
@@ -23,5 +27,6 @@ func parse() (err error) {
 		return err
 	}
 	currentAst = parser.ParseTokens(currentTokens, func(string) {})
+	parseMutex.Unlock()
 	return nil
 }

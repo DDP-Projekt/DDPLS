@@ -11,6 +11,7 @@ func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocu
 	log.Info("textDocumentDidOpen")
 	addDocument(params.TextDocument.URI, params.TextDocument.Text)
 	activeDocument = params.TextDocument.URI
+	sendDiagnostics(context.Notify, false)
 	return nil
 }
 
@@ -30,6 +31,7 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 			doc.Content = change.Text
 		}
 	}
+	sendDiagnostics(context.Notify, true)
 	return nil
 }
 

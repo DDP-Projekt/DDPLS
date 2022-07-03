@@ -17,11 +17,6 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 	}
 	refreshing = true
 
-	if err := parse(); err != nil {
-		log.Critical(err.Error())
-		return
-	}
-
 	go func() {
 		if delay {
 			time.Sleep(500 * time.Millisecond)
@@ -29,6 +24,19 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 		refreshing = false
 
 		visitor := &diagnosticVisitor{diagnostics: make([]protocol.Diagnostic, 0)}
+
+		if err := parse(func(tok token.Token, msg string) {
+			visitor.add(protocol.Diagnostic{
+				Range:    toProtocolRange(token.NewRange(tok, tok)),
+				Severity: &severityError,
+				Source:   &errSrc,
+				Message:  msg,
+			})
+		}); err != nil {
+			log.Critical(err.Error())
+			return
+		}
+
 		ast.WalkAst(currentAst, visitor)
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
@@ -176,11 +184,11 @@ func toProtocolRange(rang token.Range) protocol.Range {
 	return protocol.Range{
 		Start: protocol.Position{
 			Line:      uint32(rang.Start.Line - 1),
-			Character: uint32(rang.Start.Column),
+			Character: uint32(rang.Start.Column - 1),
 		},
 		End: protocol.Position{
 			Line:      uint32(rang.End.Line - 1),
-			Character: uint32(rang.End.Column),
+			Character: uint32(rang.End.Column - 1),
 		},
 	}
 }

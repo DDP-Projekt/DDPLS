@@ -15,7 +15,7 @@ func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.Sema
 	log.Info("textDocumentSemanticTokensFull")
 	activeDocument = params.TextDocument.URI
 
-	if err := parse(); err != nil {
+	if err := parse(emptyErrHndl); err != nil {
 		log.Critical(err.Error())
 		return nil, err
 	}

@@ -8,6 +8,8 @@ github.com/DDP-Projekt/Kompilierer v0.0.0-20220702133539-5bae78581990 h1:A2Qp+4l
 github.com/DDP-Projekt/Kompilierer v0.0.0-20220702133539-5bae78581990/go.mod h1:ufPtlLGGOjaHwZygifnAFUcQYBRvBQ5nS6ue1K1HFEk=
 github.com/DDP-Projekt/Kompilierer v0.0.0-20220703123854-a35e7372b107 h1:8CZervEaWDuMuoRhHfHyR/yF9PFfTwb9NmshwANcnvs=
 github.com/DDP-Projekt/Kompilierer v0.0.0-20220703123854-a35e7372b107/go.mod h1:ufPtlLGGOjaHwZygifnAFUcQYBRvBQ5nS6ue1K1HFEk=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20220703144133-1e65aa307c14 h1:gSvcL+8XSqxmr79sCj2p60hXi1UIcFrtyq+jHAzleEQ=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20220703144133-1e65aa307c14/go.mod h1:ufPtlLGGOjaHwZygifnAFUcQYBRvBQ5nS6ue1K1HFEk=
 github.com/bafto/glsp v0.1.2 h1:jgonfF8Fws1a8I+5dS6nDySXghAP+MLYFEc7sMOAhYo=
 github.com/bafto/glsp v0.1.2/go.mod h1:Yhnps5UVwwRzxwAFjlZv1QNDXxlugSEF+6GbOlREZu0=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

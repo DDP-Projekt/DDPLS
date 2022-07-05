@@ -113,6 +113,10 @@ func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.Visitor {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeVariable, nil))
 	return t
 }
+func (t *semanticTokenizer) VisitIndexing(e *ast.Indexing) ast.Visitor {
+	e.Name.Accept(t)
+	return e.Index.Accept(t)
+}
 func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
 	return t
@@ -122,7 +126,6 @@ func (t *semanticTokenizer) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
 	return t
 }
 func (t *semanticTokenizer) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeKeyword, nil))
 	return t
 }
 func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.Visitor {
@@ -176,7 +179,13 @@ func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	t.add(newHightlightedToken(token.NewRange(s.Name, s.Name), protocol.SemanticTokenTypeVariable, nil))
+	switch assign := s.Var.(type) {
+	case *ast.Ident:
+		t.add(newHightlightedToken(assign.GetRange(), protocol.SemanticTokenTypeVariable, nil))
+	case *ast.Indexing:
+		t.add(newHightlightedToken(assign.Name.GetRange(), protocol.SemanticTokenTypeVariable, nil))
+		assign.Index.Accept(t)
+	}
 	return s.Rhs.Accept(t)
 }
 func (t *semanticTokenizer) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {

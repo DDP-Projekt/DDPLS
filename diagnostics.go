@@ -85,6 +85,10 @@ func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 func (d *diagnosticVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
 	return d
 }
+func (d *diagnosticVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
+	e.Name.Accept(d)
+	return e.Index.Accept(d)
+}
 func (d *diagnosticVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	return d
 }
@@ -138,6 +142,7 @@ func (d *diagnosticVisitor) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(d)
 }
 func (d *diagnosticVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+	s.Var.Accept(d)
 	return s.Rhs.Accept(d)
 }
 func (d *diagnosticVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {

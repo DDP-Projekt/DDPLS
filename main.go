@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
@@ -21,9 +19,9 @@ var handler protocol.Handler
 var log = logging.GetLogger("ddp.ddpls")
 
 func main() {
-	os.WriteFile(logPath, []byte(""), os.ModePerm)
+	//os.WriteFile(logPath, []byte(""), os.ModePerm)
 	// This increases logging verbosity (optional)
-	logging.Configure(1, &logPath)
+	logging.Configure(1, nil)
 
 	handler = protocol.Handler{
 		Initialize:                     initialize,

@@ -70,7 +70,10 @@ func (d *diagnosticVisitor) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
 	return decl.InitVal.Accept(d)
 }
 func (d *diagnosticVisitor) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	return decl.Body.Accept(d)
+	if decl.Body != nil {
+		decl.Body.Accept(d)
+	}
+	return d
 }
 
 func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
@@ -189,11 +192,11 @@ func toProtocolRange(rang token.Range) protocol.Range {
 	return protocol.Range{
 		Start: protocol.Position{
 			Line:      uint32(rang.Start.Line - 1),
-			Character: uint32(rang.Start.Column - 1),
+			Character: uint32(rang.Start.Column - 2),
 		},
 		End: protocol.Position{
 			Line:      uint32(rang.End.Line - 1),
-			Character: uint32(rang.End.Column - 1),
+			Character: uint32(rang.End.Column - 2),
 		},
 	}
 }

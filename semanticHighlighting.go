@@ -103,7 +103,10 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	for _, param := range d.ParamNames {
 		t.add(newHightlightedToken(token.NewRange(param, param), protocol.SemanticTokenTypeParameter, nil))
 	}
-	return d.Body.Accept(t)
+	if d.Body != nil {
+		d.Body.Accept(t)
+	}
+	return t
 }
 
 func (t *semanticTokenizer) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
@@ -234,7 +237,7 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 	}
 	return highlightedToken{
 		line:      rang.Start.Line,
-		column:    rang.Start.Column,
+		column:    rang.Start.Column - 1,
 		length:    getRangeLength(rang),
 		tokenType: tokType,
 		modifiers: modifiers,

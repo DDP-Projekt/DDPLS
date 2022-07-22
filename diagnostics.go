@@ -33,7 +33,6 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 				Message:  msg,
 			})
 		}); err != nil {
-			log.Critical(err.Error())
 			return
 		}
 

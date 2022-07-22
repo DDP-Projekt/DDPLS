@@ -8,7 +8,6 @@ import (
 )
 
 func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	log.Info("textDocumentDidOpen")
 	addDocument(params.TextDocument.URI, params.TextDocument.Text)
 	activeDocument = params.TextDocument.URI
 	sendDiagnostics(context.Notify, false)
@@ -16,7 +15,6 @@ func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocu
 }
 
 func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	log.Info("textDocumentDidChange")
 	doc, ok := getDocument(params.TextDocument.URI)
 	if !ok {
 		return errors.New("document sync error")
@@ -36,12 +34,10 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 }
 
 func textDocumentDidSave(*glsp.Context, *protocol.DidSaveTextDocumentParams) error {
-	log.Info("textDocumentDidSave")
 	return nil
 }
 
 func textDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
-	log.Info("textDocumentDidClose")
 	deleteDocument(params.TextDocument.URI)
 	return nil
 }

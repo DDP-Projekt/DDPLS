@@ -12,11 +12,9 @@ import (
 )
 
 func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	log.Info("textDocumentSemanticTokensFull")
 	activeDocument = params.TextDocument.URI
 
 	if err := parse(emptyErrHndl); err != nil {
-		log.Critical(err.Error())
 		return nil, err
 	}
 
@@ -31,13 +29,11 @@ func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.Sema
 	}
 
 	tokens := tokenizer.getTokens()
-	log.Infof("tokens: %v", tokens.Data)
 
 	return tokens, nil
 }
 
 func textDocumentSemanticTokensRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
-	log.Info("textDocumentSemanticTokensRange")
 	return nil, nil
 }
 

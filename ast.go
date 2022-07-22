@@ -18,6 +18,7 @@ var parseMutex = sync.Mutex{}
 
 func parse(errHndl scanner.ErrorHandler) (err error) {
 	parseMutex.Lock()
+	defer parseMutex.Unlock()
 	activeDoc, ok := getDocument(activeDocument)
 	if !ok {
 		return errors.New("activeDocument not in document map")
@@ -27,7 +28,6 @@ func parse(errHndl scanner.ErrorHandler) (err error) {
 		return err
 	}
 	currentAst = parser.ParseTokens(currentTokens, errHndl)
-	parseMutex.Unlock()
 	return nil
 }
 

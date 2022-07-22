@@ -13,13 +13,9 @@ import (
 const lsName = "ddp"
 
 var version string = "0.0.1"
-var logPath string = "./ddpls_log.txt"
 var handler protocol.Handler
 
-var log = logging.GetLogger("ddp.ddpls")
-
 func main() {
-	//os.WriteFile(logPath, []byte(""), os.ModePerm)
 	// This increases logging verbosity (optional)
 	logging.Configure(1, nil)
 

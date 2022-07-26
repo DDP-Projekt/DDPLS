@@ -106,6 +106,14 @@ func (d *diagnosticVisitor) VisitCharLit(e *ast.CharLit) ast.Visitor {
 func (d *diagnosticVisitor) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	return d
 }
+func (d *diagnosticVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
+	if e.Values != nil {
+		for _, expr := range e.Values {
+			expr.Accept(d)
+		}
+	}
+	return d
+}
 func (d *diagnosticVisitor) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return e.Rhs.Accept(d)
 }
@@ -117,6 +125,9 @@ func (d *diagnosticVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	e.Lhs.Accept(d)
 	e.Mid.Accept(d)
 	return e.Rhs.Accept(d)
+}
+func (d *diagnosticVisitor) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+	return e.Lhs.Accept(d)
 }
 func (d *diagnosticVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
 	return e.Expr.Accept(d)

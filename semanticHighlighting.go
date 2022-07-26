@@ -135,6 +135,14 @@ func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.Visitor {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
 	return t
 }
+func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
+	if e.Values != nil {
+		for _, expr := range e.Values {
+			expr.Accept(t)
+		}
+	}
+	return t
+}
 func (t *semanticTokenizer) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
 	return e.Rhs.Accept(t)
 }
@@ -146,6 +154,9 @@ func (t *semanticTokenizer) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	e.Lhs.Accept(t)
 	e.Mid.Accept(t)
 	return e.Rhs.Accept(t)
+}
+func (t *semanticTokenizer) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+	return e.Lhs.Accept(t)
 }
 func (t *semanticTokenizer) VisitGrouping(e *ast.Grouping) ast.Visitor {
 	return e.Expr.Accept(t)

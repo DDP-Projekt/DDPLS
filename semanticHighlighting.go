@@ -113,7 +113,7 @@ func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.Visitor {
 	return t
 }
 func (t *semanticTokenizer) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	e.Name.Accept(t)
+	e.Lhs.Accept(t)
 	return e.Index.Accept(t)
 }
 func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.Visitor {
@@ -193,7 +193,7 @@ func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 	case *ast.Ident:
 		t.add(newHightlightedToken(assign.GetRange(), protocol.SemanticTokenTypeVariable, nil))
 	case *ast.Indexing:
-		t.add(newHightlightedToken(assign.Name.GetRange(), protocol.SemanticTokenTypeVariable, nil))
+		t.add(newHightlightedToken(assign.Lhs.GetRange(), protocol.SemanticTokenTypeVariable, nil))
 		assign.Index.Accept(t)
 	}
 	return s.Rhs.Accept(t)

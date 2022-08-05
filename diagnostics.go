@@ -88,7 +88,7 @@ func (d *diagnosticVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
 	return d
 }
 func (d *diagnosticVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	e.Name.Accept(d)
+	e.Lhs.Accept(d)
 	return e.Index.Accept(d)
 }
 func (d *diagnosticVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {

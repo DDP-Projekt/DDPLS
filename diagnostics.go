@@ -197,6 +197,9 @@ func (d *diagnosticVisitor) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(d)
 }
 func (d *diagnosticVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+	if s.Value == nil {
+		return d
+	}
 	return s.Value.Accept(d)
 }
 

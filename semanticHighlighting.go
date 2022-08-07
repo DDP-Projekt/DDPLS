@@ -235,6 +235,9 @@ func (t *semanticTokenizer) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
 	return s.Call.Accept(t)
 }
 func (t *semanticTokenizer) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+	if s.Value == nil {
+		return t
+	}
 	return s.Value.Accept(t)
 }
 

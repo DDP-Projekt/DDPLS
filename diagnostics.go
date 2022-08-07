@@ -57,12 +57,14 @@ var severityError = protocol.DiagnosticSeverityError
 var errSrc = "ddp"
 
 func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
-	d.add(protocol.Diagnostic{
-		Range:    toProtocolRange(decl.GetRange()),
-		Severity: &severityError,
-		Source:   &errSrc,
-		Message:  decl.Message,
-	})
+	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
+		d.add(protocol.Diagnostic{
+			Range:    toProtocolRange(decl.GetRange()),
+			Severity: &severityError,
+			Source:   &errSrc,
+			Message:  decl.Message,
+		})
+	}
 	return d
 }
 func (d *diagnosticVisitor) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {

@@ -15,6 +15,8 @@ const lsName = "ddp"
 var version string = "0.0.1"
 var handler protocol.Handler
 
+var log = logging.GetLogger("ddp.ddpls")
+
 func main() {
 	// This increases logging verbosity (optional)
 	logging.Configure(1, nil)

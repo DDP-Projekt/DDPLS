@@ -23,7 +23,7 @@ func parse(errHndl scanner.ErrorHandler) (err error) {
 	if !ok {
 		return errors.New("activeDocument not in document map")
 	}
-	currentTokens, err = scanner.ScanSource(activeDocument, []byte(activeDoc.Content), errHndl, scanner.ModeStrictCapitalization)
+	currentTokens, err = scanner.ScanSource(activeDoc.Path, []byte(activeDoc.Content), errHndl, scanner.ModeStrictCapitalization)
 	if err != nil {
 		return err
 	}

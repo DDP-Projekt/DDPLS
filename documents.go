@@ -1,19 +1,32 @@
 package main
 
-import "sync"
+import (
+	"net/url"
+	"strings"
+	"sync"
+)
 
 type DocumentState struct {
 	Content string
 	Uri     string
+	Path    string
 }
 
 var documentStates = &sync.Map{}
 var activeDocument string // uri of the active document
 
 func addDocument(uri, content string) {
+	parsed, err := url.ParseRequestURI(uri)
+	path := uri
+	if err != nil {
+		log.Warningf("url.ParseRequestURI: %s", err)
+	} else {
+		path = strings.TrimLeft(parsed.Path, "/")
+	}
 	documentStates.Store(uri, &DocumentState{
 		Uri:     uri,
 		Content: content,
+		Path:    path,
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 )
 
 func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+	log.Infof("documentDidOpen, uri: %s", params.TextDocument.URI)
 	addDocument(params.TextDocument.URI, params.TextDocument.Text)
 	activeDocument = params.TextDocument.URI
 	sendDiagnostics(context.Notify, false)

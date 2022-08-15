@@ -189,13 +189,7 @@ func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	switch assign := s.Var.(type) {
-	case *ast.Ident:
-		t.add(newHightlightedToken(assign.GetRange(), protocol.SemanticTokenTypeVariable, nil))
-	case *ast.Indexing:
-		t.add(newHightlightedToken(assign.Lhs.GetRange(), protocol.SemanticTokenTypeVariable, nil))
-		assign.Index.Accept(t)
-	}
+	s.Var.Accept(t)
 	return s.Rhs.Accept(t)
 }
 func (t *semanticTokenizer) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {

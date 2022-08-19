@@ -140,6 +140,9 @@ func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
 		for _, expr := range e.Values {
 			expr.Accept(t)
 		}
+	} else if e.Count != nil && e.Value != nil {
+		e.Count.Accept(t)
+		e.Value.Accept(t)
 	}
 	return t
 }

@@ -113,6 +113,9 @@ func (d *diagnosticVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
 		for _, expr := range e.Values {
 			expr.Accept(d)
 		}
+	} else if e.Count != nil && e.Value != nil {
+		e.Count.Accept(d)
+		e.Value.Accept(d)
 	}
 	return d
 }

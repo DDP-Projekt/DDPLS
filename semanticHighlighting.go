@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
@@ -132,7 +133,9 @@ func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.Visitor {
 	return t
 }
 func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
+	rang := e.GetRange()
+	rang.End.Column -= 1
+	t.add(newHightlightedToken(rang, protocol.SemanticTokenTypeString, nil))
 	return t
 }
 func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
@@ -167,14 +170,33 @@ func (t *semanticTokenizer) VisitGrouping(e *ast.Grouping) ast.Visitor {
 func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
-		count := 0
+		args := make([]ast.Expression, 0, len(e.Args))
 		for _, arg := range e.Args {
-			t.add(newHightlightedToken(cutRangeOut(rang, arg.GetRange())[0], protocol.SemanticTokenTypeFunction, nil))
-			arg.Accept(t)
-			if count == len(e.Args)-1 {
-				t.add(newHightlightedToken(cutRangeOut(rang, arg.GetRange())[1], protocol.SemanticTokenTypeFunction, nil))
+			args = append(args, arg)
+		}
+		sort.Slice(args, func(i, j int) bool {
+			iRange, jRange := args[i].GetRange(), args[j].GetRange()
+			if iRange.Start.Line < jRange.Start.Line {
+				return true
 			}
-			count++
+			if iRange.Start.Line == jRange.Start.Line {
+				return iRange.Start.Column < jRange.Start.Column
+			}
+			return false
+		})
+
+		for i, arg := range args {
+			argRange := arg.GetRange()
+			cutRange := cutRangeOut(rang, argRange)
+			if getRangeLength(cutRange[0]) != 0 {
+				t.add(newHightlightedToken(cutRange[0], protocol.SemanticTokenTypeFunction, nil))
+			}
+			arg.Accept(t)
+			rang = token.Range{Start: cutRange[1].Start, End: rang.End}
+
+			if i == len(e.Args)-1 && getRangeLength(cutRange[1]) != 0 {
+				t.add(newHightlightedToken(cutRange[1], protocol.SemanticTokenTypeFunction, nil))
+			}
 		}
 	} else {
 		t.add(newHightlightedToken(rang, protocol.SemanticTokenTypeFunction, nil))
@@ -192,6 +214,10 @@ func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(t)
 }
 func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+	if s.Token().Type == token.SPEICHERE {
+		s.Rhs.Accept(t)
+		return s.Var.Accept(t)
+	}
 	s.Var.Accept(t)
 	return s.Rhs.Accept(t)
 }
@@ -270,24 +296,12 @@ func getRangeLength(rang token.Range) int {
 func cutRangeOut(wholeRange, innerRange token.Range) []token.Range {
 	return []token.Range{
 		{
-			Start: token.Position{
-				Line:   wholeRange.Start.Line,
-				Column: wholeRange.Start.Column,
-			},
-			End: token.Position{
-				Line:   innerRange.Start.Line,
-				Column: innerRange.Start.Column,
-			},
+			Start: wholeRange.Start,
+			End:   innerRange.Start,
 		},
 		{
-			Start: token.Position{
-				Line:   innerRange.End.Line,
-				Column: innerRange.End.Column,
-			},
-			End: token.Position{
-				Line:   wholeRange.End.Line,
-				Column: wholeRange.End.Column,
-			},
+			Start: innerRange.End,
+			End:   wholeRange.End,
 		},
 	}
 }

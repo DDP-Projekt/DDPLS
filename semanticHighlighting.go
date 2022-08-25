@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -21,10 +20,12 @@ func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.Sema
 
 	tokenizer := &semanticTokenizer{}
 
-	pathElements := strings.Split(activeDocument, "/")
-	fileName := pathElements[len(pathElements)-1]
+	path, err := uriToPath(activeDocument)
+	if err != nil {
+		log.Warningf("url.ParseRequestURI: %s", err)
+	}
 	for _, stmt := range currentAst.Statements {
-		if filepath.Base(stmt.Token().File) == fileName {
+		if stmt.Token().File == path {
 			stmt.Accept(tokenizer)
 		}
 	}

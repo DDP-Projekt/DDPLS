@@ -16,12 +16,9 @@ var documentStates = &sync.Map{}
 var activeDocument string // uri of the active document
 
 func addDocument(uri, content string) {
-	parsed, err := url.ParseRequestURI(uri)
-	path := uri
+	path, err := uriToPath(uri)
 	if err != nil {
 		log.Warningf("url.ParseRequestURI: %s", err)
-	} else {
-		path = strings.TrimLeft(parsed.Path, "/")
 	}
 	documentStates.Store(uri, &DocumentState{
 		Uri:     uri,
@@ -37,4 +34,15 @@ func getDocument(uri string) (*DocumentState, bool) {
 
 func deleteDocument(uri string) {
 	documentStates.Delete(uri)
+}
+
+func uriToPath(uri string) (string, error) {
+	parsed, err := url.ParseRequestURI(uri)
+	path := uri
+	if err != nil {
+		return "", err
+	} else {
+		path = strings.TrimLeft(parsed.Path, "/")
+	}
+	return path, nil
 }

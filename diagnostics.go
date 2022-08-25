@@ -9,7 +9,10 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-var refreshing = false
+var (
+	refreshing = false
+	path       = ""
+)
 
 func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 	if refreshing {
@@ -25,8 +28,13 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 
 		visitor := &diagnosticVisitor{diagnostics: make([]protocol.Diagnostic, 0)}
 
+		var err error
+		path, err = uriToPath(activeDocument)
+		if err != nil {
+			log.Warningf("url.ParseRequestURI: %s", err)
+		}
 		if err := parse(func(tok token.Token, msg string) {
-			visitor.add(protocol.Diagnostic{
+			visitor.add(tok, protocol.Diagnostic{
 				Range:    toProtocolRange(token.NewRange(tok, tok)),
 				Severity: &severityError,
 				Source:   &errSrc,
@@ -36,7 +44,9 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 			return
 		}
 
-		ast.WalkAst(currentAst, visitor)
+		for _, stmt := range currentAst.Statements {
+			stmt.Accept(visitor)
+		}
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 			URI:         activeDocument,
@@ -49,16 +59,22 @@ type diagnosticVisitor struct {
 	diagnostics []protocol.Diagnostic
 }
 
-func (d *diagnosticVisitor) add(diagnostic protocol.Diagnostic) {
+func (d *diagnosticVisitor) add(tok token.Token, diagnostic protocol.Diagnostic) {
+	if tok.File != path {
+		diagnostic.Range = protocol.Range{Start: protocol.Position{Line: 0, Character: 0}, End: protocol.Position{Line: 0, Character: 1}}
+		diagnostic.Message = tok.File + ": " + diagnostic.Message
+	}
 	d.diagnostics = append(d.diagnostics, diagnostic)
 }
 
-var severityError = protocol.DiagnosticSeverityError
-var errSrc = "ddp"
+var (
+	severityError = protocol.DiagnosticSeverityError
+	errSrc        = "ddp"
+)
 
 func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
-		d.add(protocol.Diagnostic{
+		d.add(decl.Token(), protocol.Diagnostic{
 			Range:    toProtocolRange(decl.GetRange()),
 			Severity: &severityError,
 			Source:   &errSrc,
@@ -78,7 +94,7 @@ func (d *diagnosticVisitor) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
 }
 
 func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	d.add(protocol.Diagnostic{
+	d.add(e.Token(), protocol.Diagnostic{
 		Range:    toProtocolRange(e.GetRange()),
 		Severity: &severityError,
 		Source:   &errSrc,
@@ -145,7 +161,7 @@ func (d *diagnosticVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 }
 
 func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	d.add(protocol.Diagnostic{
+	d.add(s.Token(), protocol.Diagnostic{
 		Range:    toProtocolRange(s.GetRange()),
 		Severity: &severityError,
 		Source:   &errSrc,

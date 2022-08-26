@@ -3,7 +3,7 @@ module DDPLS
 go 1.18
 
 require (
-	github.com/DDP-Projekt/Kompilierer v0.0.0-20220825131248-a117a1165181
+	github.com/DDP-Projekt/Kompilierer v0.0.0-20220826091853-76cb47a691fc
 	github.com/tliron/glsp v0.1.2-0.20220628161923-1d70ae869611
 	github.com/tliron/kutil v0.1.60
 )

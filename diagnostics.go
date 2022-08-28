@@ -196,8 +196,15 @@ func (d *diagnosticVisitor) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	return d
 }
 func (d *diagnosticVisitor) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	s.Condition.Accept(d)
-	return s.Body.Accept(d)
+	switch s.While.Type {
+	case token.SOLANGE:
+		s.Condition.Accept(d)
+		s.Body.Accept(d)
+	case token.MACHE, token.COUNT_MAL:
+		s.Body.Accept(d)
+		s.Condition.Accept(d)
+	}
+	return d
 }
 func (d *diagnosticVisitor) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	s.Initializer.Accept(d)

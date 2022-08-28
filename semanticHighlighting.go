@@ -239,8 +239,15 @@ func (t *semanticTokenizer) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	return t
 }
 func (t *semanticTokenizer) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	s.Condition.Accept(t)
-	return s.Body.Accept(t)
+	switch s.While.Type {
+	case token.SOLANGE:
+		s.Condition.Accept(t)
+		s.Body.Accept(t)
+	case token.MACHE, token.COUNT_MAL:
+		s.Body.Accept(t)
+		s.Condition.Accept(t)
+	}
+	return t
 }
 func (t *semanticTokenizer) VisitForStmt(s *ast.ForStmt) ast.Visitor {
 	s.Initializer.Accept(t)

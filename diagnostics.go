@@ -9,10 +9,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-var (
-	refreshing = false
-	path       = ""
-)
+var refreshing = false
 
 func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 	if refreshing {
@@ -26,13 +23,13 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 		}
 		refreshing = false
 
-		visitor := &diagnosticVisitor{diagnostics: make([]protocol.Diagnostic, 0)}
-
-		var err error
-		path, err = uriToPath(activeDocument)
+		path, err := uriToPath(activeDocument)
 		if err != nil {
 			log.Warningf("url.ParseRequestURI: %s", err)
 		}
+
+		visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
+
 		if err := parse(func(tok token.Token, msg string) {
 			visitor.add(tok, protocol.Diagnostic{
 				Range:    toProtocolRange(token.NewRange(tok, tok)),
@@ -41,6 +38,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 				Message:  msg,
 			})
 		}); err != nil {
+			log.Errorf("parser error: %s", err)
 			return
 		}
 
@@ -56,11 +54,12 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 }
 
 type diagnosticVisitor struct {
+	path        string
 	diagnostics []protocol.Diagnostic
 }
 
 func (d *diagnosticVisitor) add(tok token.Token, diagnostic protocol.Diagnostic) {
-	if tok.File != path {
+	if tok.File != d.path {
 		diagnostic.Range = protocol.Range{Start: protocol.Position{Line: 0, Character: 0}, End: protocol.Position{Line: 0, Character: 1}}
 		diagnostic.Message = tok.File + ": " + diagnostic.Message
 	}

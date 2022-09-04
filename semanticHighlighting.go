@@ -12,31 +12,26 @@ import (
 )
 
 func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	activeDocument = params.TextDocument.URI
-
-	if err := parse(emptyErrHndl); err != nil {
+	if err := parse(func(token.Token, string) {}); err != nil {
+		log.Errorf("parser error: %s", err)
 		return nil, err
 	}
 
+	currentAst := currentAst
 	tokenizer := &semanticTokenizer{}
 
 	path, err := uriToPath(activeDocument)
 	if err != nil {
 		log.Warningf("url.ParseRequestURI: %s", err)
 	}
+
 	for _, stmt := range currentAst.Statements {
 		if stmt.Token().File == path {
 			stmt.Accept(tokenizer)
 		}
 	}
 
-	tokens := tokenizer.getTokens()
-
-	return tokens, nil
-}
-
-func textDocumentSemanticTokensRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
-	return nil, nil
+	return tokenizer.getTokens(), nil
 }
 
 type highlightedToken struct {

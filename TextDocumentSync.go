@@ -8,7 +8,6 @@ import (
 )
 
 func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	log.Infof("documentDidOpen, uri: %s", params.TextDocument.URI)
 	addDocument(params.TextDocument.URI, params.TextDocument.Text)
 	activeDocument = params.TextDocument.URI
 	sendDiagnostics(context.Notify, false)
@@ -20,7 +19,6 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 	if !ok {
 		return errors.New("document sync error")
 	}
-	activeDocument = params.TextDocument.URI
 	for _, change := range params.ContentChanges {
 		switch change := change.(type) {
 		case protocol.TextDocumentContentChangeEvent:
@@ -30,6 +28,7 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 			doc.Content = change.Text
 		}
 	}
+	activeDocument = params.TextDocument.URI
 	sendDiagnostics(context.Notify, true)
 	return nil
 }

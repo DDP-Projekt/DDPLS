@@ -12,6 +12,7 @@ import (
 )
 
 func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	activeDocument = params.TextDocument.URI
 	if err := parse(func(token.Token, string) {}); err != nil {
 		log.Errorf("parser error: %s", err)
 		return nil, err

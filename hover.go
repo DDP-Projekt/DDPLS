@@ -28,15 +28,9 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 		currentSymbols: currentAst.Symbols,
 		doc:            doc,
 		file:           currentAst.File,
-		varDecls:       make(map[string]*ast.VarDecl),
 	}
 
 	for _, stmt := range currentAst.Statements {
-		if decl, ok := stmt.(*ast.DeclStmt); ok {
-			if varDecl, ok := decl.Decl.(*ast.VarDecl); ok {
-				hover.varDecls[varDecl.Name.Literal] = varDecl
-			}
-		}
 		if stmt.Token().File == hover.file && isInRange(stmt.GetRange(), hover.pos) {
 			stmt.Accept(hover)
 			break
@@ -68,7 +62,6 @@ type hoverVisitor struct {
 	currentSymbols *ast.SymbolTable
 	doc            *DocumentState
 	file           string
-	varDecls       map[string]*ast.VarDecl
 }
 
 func (h *hoverVisitor) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
@@ -91,13 +84,13 @@ func (h *hoverVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 	return h
 }
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
-	if typ, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
-		decl, ok := h.varDecls[e.Literal.Literal]
+	if decl, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
 		val := ""
-		if ok {
-			val = fmt.Sprintf("[Z %d, S %d]: %s", decl.Name.Line, decl.Name.Column, typ.String())
+		if decl.Token().File == h.file {
+			val = fmt.Sprintf("[Z %d, S %d]: %s", decl.Name.Line, decl.Name.Column, decl.Type)
 		} else {
-			val = typ.String()
+			datei := h.getHoverFilePath(decl.Name.File)
+			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, decl.Name.Line, decl.Name.Column, decl.Type)
 		}
 		pRange := toProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
@@ -219,16 +212,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			}
 			start, end := declRange.IndexesIn(string(content))
 
-			datei, err := filepath.Rel(h.file, file)
-			if err != nil {
-				datei = filepath.Base(file)
-			} else {
-				datei = filepath.ToSlash(strings.TrimPrefix(datei, ".."+string(filepath.Separator)))
-			}
-			if strings.HasPrefix(file, filepath.Join(scanner.DDPPATH, "Duden")) {
-				datei = "Duden/" + filepath.Base(file)
-			}
-
+			datei := h.getHoverFilePath(file)
 			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, fun.Token().Line, fun.Token().Column, content[start:end])
 		} else {
 			start, end := declRange.IndexesIn(h.doc.Content)
@@ -268,11 +252,6 @@ func (h *hoverVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 func (h *hoverVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	h.currentSymbols = s.Symbols
 	for _, stmt := range s.Statements {
-		if decl, ok := stmt.(*ast.DeclStmt); ok {
-			if varDecl, ok := decl.Decl.(*ast.VarDecl); ok {
-				h.varDecls[varDecl.Name.Literal] = varDecl
-			}
-		}
 		if isInRange(stmt.GetRange(), h.pos) {
 			return stmt.Accept(h)
 		}
@@ -338,4 +317,17 @@ func (h *hoverVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 		return s.Value.Accept(h)
 	}
 	return h
+}
+
+func (h *hoverVisitor) getHoverFilePath(file string) string {
+	datei, err := filepath.Rel(h.file, file)
+	if err != nil {
+		datei = filepath.Base(file)
+	} else {
+		datei = filepath.ToSlash(strings.TrimPrefix(datei, ".."+string(filepath.Separator)))
+	}
+	if strings.HasPrefix(file, filepath.Join(scanner.DDPPATH, "Duden")) {
+		datei = "Duden/" + filepath.Base(file)
+	}
+	return datei
 }

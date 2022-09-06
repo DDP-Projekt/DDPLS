@@ -194,17 +194,13 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	if fun, ok := h.currentSymbols.LookupFunc(e.Name); ok {
 		val := ""
 		var declRange protocol.Range
+
 		if fun.Body != nil {
-			declRange = toProtocolRange(token.NewRange(fun.Func, fun.Body.Colon))
+			declRange = toProtocolRange(token.NewRange(fun.Tok, fun.Body.Colon))
 		} else {
-			declRange = toProtocolRange(token.Range{
-				Start: token.NewStartPos(fun.Func),
-				End: token.Position{
-					Line:   fun.ExternFile.Line,
-					Column: fun.ExternFile.Column + len(fun.ExternFile.Literal) + len(" definiert"),
-				},
-			})
+			declRange = toProtocolRange(fun.GetRange())
 		}
+
 		if file := fun.Token().File; file != h.file {
 			content, err := os.ReadFile(file)
 			if err != nil {
@@ -213,10 +209,30 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			start, end := declRange.IndexesIn(string(content))
 
 			datei := h.getHoverFilePath(file)
-			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, fun.Token().Line, fun.Token().Column, content[start:end])
+			val = fmt.Sprintf("[D %s, Z %d, S %d]\n%s", datei, fun.Token().Line, fun.Token().Column, content[start:end])
+
+			if fun.Body != nil {
+				val += "\n..."
+				endRange := toProtocolRange(token.Range{
+					Start: fun.Body.Range.End,
+					End:   fun.GetRange().End,
+				})
+				start, end = endRange.IndexesIn(string(content))
+				val += string(content[start:end])
+			}
 		} else {
 			start, end := declRange.IndexesIn(h.doc.Content)
-			val = fmt.Sprintf("[Z %d, S %d]: %s", fun.Token().Line, fun.Token().Column, h.doc.Content[start:end])
+			val = fmt.Sprintf("[Z %d, S %d]\n%s", fun.Token().Line, fun.Token().Column, h.doc.Content[start:end])
+
+			if fun.Body != nil {
+				val += "\n..."
+				endRange := toProtocolRange(token.Range{
+					Start: fun.Body.Range.End,
+					End:   fun.GetRange().End,
+				})
+				start, end = endRange.IndexesIn(h.doc.Content)
+				val += h.doc.Content[start:end]
+			}
 		}
 
 		pRange := toProtocolRange(e.GetRange())

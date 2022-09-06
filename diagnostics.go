@@ -232,11 +232,11 @@ func toProtocolRange(rang token.Range) protocol.Range {
 	return protocol.Range{
 		Start: protocol.Position{
 			Line:      uint32(rang.Start.Line - 1),
-			Character: uint32(rang.Start.Column - 2),
+			Character: uint32(rang.Start.Column - 1),
 		},
 		End: protocol.Position{
 			Line:      uint32(rang.End.Line - 1),
-			Character: uint32(rang.End.Column - 2),
+			Character: uint32(rang.End.Column - 1),
 		},
 	}
 }

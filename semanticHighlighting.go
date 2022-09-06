@@ -274,7 +274,7 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 	}
 	return highlightedToken{
 		line:      rang.Start.Line,
-		column:    rang.Start.Column - 1,
+		column:    rang.Start.Column,
 		length:    getRangeLength(rang),
 		tokenType: tokType,
 		modifiers: modifiers,
@@ -291,7 +291,7 @@ func getRangeLength(rang token.Range) int {
 	for i := rang.Start.Line; i < rang.End.Line-1; i++ {
 		length += len(lines[i])
 	}
-	length += len(lines[rang.End.Line-1][:rang.End.Column-2])
+	length += len(lines[rang.End.Line-1][:rang.End.Column-1])
 	return length
 }
 

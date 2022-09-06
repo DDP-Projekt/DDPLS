@@ -40,22 +40,6 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	return hover.hover, nil
 }
 
-func isInRange(rang token.Range, pos protocol.Position) bool {
-	if pos.Line < uint32(rang.Start.Line-1) || pos.Line > uint32(rang.End.Line-1) {
-		return false
-	}
-	if pos.Line == uint32(rang.Start.Line-1) && pos.Line == uint32(rang.End.Line-1) {
-		return pos.Character+1 >= uint32(rang.Start.Column-1) && pos.Character+1 <= uint32(rang.End.Column-1)
-	}
-	if pos.Line == uint32(rang.Start.Line-1) {
-		return pos.Character+1 >= uint32(rang.Start.Column-1)
-	}
-	if pos.Line == uint32(rang.End.Line-1) {
-		return pos.Character+1 <= uint32(rang.End.Column-1)
-	}
-	return true
-}
-
 type hoverVisitor struct {
 	hover          *protocol.Hover
 	pos            protocol.Position
@@ -335,6 +319,7 @@ func (h *hoverVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
 	return h
 }
 
+// helper to get a nice-looking path to display in a hover
 func (h *hoverVisitor) getHoverFilePath(file string) string {
 	datei, err := filepath.Rel(h.file, file)
 	if err != nil {

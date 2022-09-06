@@ -10,10 +10,14 @@ import (
 )
 
 var (
+	// the resulting Ast of the activeDocument
+	// should be copied on start of use to make sure
+	// it doesn't change while being used
 	currentAst *ast.Ast
 	parseMutex = sync.Mutex{}
 )
 
+// concurrency-safe re-parsing of currentAst
 func parse(errHndl scanner.ErrorHandler) (err error) {
 	parseMutex.Lock()
 	defer parseMutex.Unlock()

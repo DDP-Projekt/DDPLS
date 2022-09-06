@@ -59,6 +59,7 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 	}, nil
 }
 
+// helper for semantic token
 func tokenTypeLegend() []string {
 	legend := make([]string, len(allTokenTypes))
 	for i, tokenType := range allTokenTypes {
@@ -67,6 +68,7 @@ func tokenTypeLegend() []string {
 	return legend
 }
 
+// helper for semantic token
 func tokenModifierLegend() []string {
 	legend := make([]string, len(allTokenModifiers))
 	for i, tokenModifier := range allTokenModifiers {

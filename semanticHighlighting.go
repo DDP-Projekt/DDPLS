@@ -2,7 +2,6 @@ package main
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
@@ -281,34 +280,7 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 	}
 }
 
-func getRangeLength(rang token.Range) int {
-	if rang.Start.Line == rang.End.Line {
-		return rang.End.Column - rang.Start.Column
-	}
-	doc, _ := getDocument(activeDocument)
-	lines := strings.Split(doc.Content, "\n")
-	length := len(lines[rang.Start.Line-1][rang.Start.Column-1:])
-	for i := rang.Start.Line; i < rang.End.Line-1; i++ {
-		length += len(lines[i])
-	}
-	length += len(lines[rang.End.Line-1][:rang.End.Column-1])
-	return length
-}
-
-// returns two new ranges, constructed by cutting innerRange out of wholeRange
-// innerRange must be completely contained in wholeRange
-func cutRangeOut(wholeRange, innerRange token.Range) []token.Range {
-	return []token.Range{
-		{
-			Start: wholeRange.Start,
-			End:   innerRange.Start,
-		},
-		{
-			Start: innerRange.End,
-			End:   wholeRange.End,
-		},
-	}
-}
+// helper stuff for semantic tokens
 
 var allTokenTypes = []protocol.SemanticTokenType{
 	protocol.SemanticTokenTypeNamespace,

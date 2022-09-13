@@ -31,8 +31,8 @@ func main() {
 		TextDocumentDidChange:          textDocumentDidChange,
 		TextDocumentDidClose:           textDocumentDidClose,
 		TextDocumentSemanticTokensFull: textDocumentSemanticTokensFull,
-		//TextDocumentCompletion: textDocumentCompletion,
-		TextDocumentHover: textDocumentHover,
+		TextDocumentCompletion:         textDocumentCompletion,
+		TextDocumentHover:              textDocumentHover,
 	}
 	server := server.NewServer(&handler, lsName, false)
 

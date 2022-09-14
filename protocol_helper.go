@@ -58,13 +58,22 @@ func isInRange(rang token.Range, pos protocol.Position) bool {
 		return false
 	}
 	if pos.Line == uint32(rang.Start.Line-1) && pos.Line == uint32(rang.End.Line-1) {
-		return pos.Character+1 >= uint32(rang.Start.Column-1) && pos.Character+1 <= uint32(rang.End.Column-1)
+		return pos.Character >= uint32(rang.Start.Column-1) && pos.Character <= uint32(rang.End.Column-1)
 	}
 	if pos.Line == uint32(rang.Start.Line-1) {
-		return pos.Character+1 >= uint32(rang.Start.Column-1)
+		return pos.Character >= uint32(rang.Start.Column-1)
 	}
 	if pos.Line == uint32(rang.End.Line-1) {
-		return pos.Character+1 <= uint32(rang.End.Column-1)
+		return pos.Character <= uint32(rang.End.Column-1)
 	}
 	return true
+}
+
+func contains[T comparable](s []T, e T) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	"github.com/tliron/glsp"
@@ -35,7 +37,13 @@ func textDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		pos:   params.Position,
 	}
 
+	aliases := make([]ast.FuncAlias, 0)
 	for _, stmt := range currentAst.Statements {
+		if decl, ok := stmt.(*ast.DeclStmt); ok {
+			if funDecl, ok := decl.Decl.(*ast.FuncDecl); ok {
+				aliases = append(aliases, funDecl.Aliases...)
+			}
+		}
 		if stmt.Token().File == currentAst.File && isInRange(stmt.GetRange(), visitor.pos) {
 			stmt.Accept(visitor)
 			break
@@ -61,7 +69,22 @@ func textDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		items = append(items, v)
 	}
 
+	for _, alias := range aliases {
+		items = append(items, aliasToCompletionItem(alias))
+	}
+
 	return items, nil
+}
+
+func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
+	insertText := strings.TrimPrefix(strings.TrimSuffix(alias.Original.Literal, "\""), "\"") // remove the ""
+	return protocol.CompletionItem{
+		Kind:       ptr(protocol.CompletionItemKindFunction),
+		Label:      alias.Func,
+		InsertText: &insertText,
+		Detail:     &insertText,
+		FilterText: &insertText,
+	}
 }
 
 func ptr[T any](v T) *T {

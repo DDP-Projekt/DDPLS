@@ -33,6 +33,7 @@ func main() {
 		TextDocumentSemanticTokensFull: textDocumentSemanticTokensFull,
 		TextDocumentCompletion:         textDocumentCompletion,
 		TextDocumentHover:              textDocumentHover,
+		TextDocumentDefinition:         textDocumentDefinition,
 	}
 	server := server.NewServer(&handler, lsName, false)
 

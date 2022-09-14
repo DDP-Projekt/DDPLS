@@ -155,7 +155,7 @@ func (t *tableVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
 func (t *tableVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	return t
 }
-func (t *tableVisitor) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (t *tableVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	return t
 }
 func (t *tableVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {

@@ -77,7 +77,7 @@ func (def *definitionVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
 func (def *definitionVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	return def
 }
-func (def *definitionVisitor) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (def *definitionVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	return def
 }
 func (def *definitionVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {

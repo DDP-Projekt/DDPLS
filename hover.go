@@ -99,7 +99,7 @@ func (h *hoverVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
 func (h *hoverVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	return h
 }
-func (h *hoverVisitor) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (h *hoverVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	return h
 }
 func (h *hoverVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {

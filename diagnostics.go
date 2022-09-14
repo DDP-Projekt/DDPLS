@@ -111,7 +111,7 @@ func (d *diagnosticVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
 func (d *diagnosticVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	return d
 }
-func (d *diagnosticVisitor) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (d *diagnosticVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	return d
 }
 func (d *diagnosticVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {

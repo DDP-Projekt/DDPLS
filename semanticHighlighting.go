@@ -117,7 +117,7 @@ func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.Visitor {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
 	return t
 }
-func (t *semanticTokenizer) VisitFLoatLit(e *ast.FloatLit) ast.Visitor {
+func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
 	return t
 }

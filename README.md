@@ -7,10 +7,10 @@ Mit einem Language Server ist es möglich IDE's zu erweitern, um DDP zu unterst�
 * [Syntax highlighting](#syntax-highlighting)
 * [Diagnose Informationen](#diagnose-informationen)
 * [Hover](#hover)
-    * [Über einer Variable:](#ber-einer-variable)
-    * [Über einem Funktionsaufruf:](#ber-einem-funktionsaufruf)
+    * [Über einer Variable](#über-einer-variable)
+    * [Über einem Funktionsaufruf](#über-einem-funktionsaufruf)
 * [Go to definition und Peek definition](#go-to-definition-und-peek-definition)
-* [Vorschläge](#vorschlge)
+* [Vorschläge](#vorschläge)
 <!-- TOC -->
 
 ### Syntax highlighting

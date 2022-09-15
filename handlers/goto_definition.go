@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -10,7 +10,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
+func TextDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
 	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error

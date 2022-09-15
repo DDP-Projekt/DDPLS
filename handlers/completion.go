@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"strings"
@@ -12,7 +12,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
+func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
 	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error

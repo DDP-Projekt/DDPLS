@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"sort"
@@ -13,7 +13,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+func TextDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
 	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error
@@ -285,7 +285,7 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 
 // helper stuff for semantic tokens
 
-var allTokenTypes = []protocol.SemanticTokenType{
+var AllTokenTypes = []protocol.SemanticTokenType{
 	protocol.SemanticTokenTypeNamespace,
 	protocol.SemanticTokenTypeType,
 	protocol.SemanticTokenTypeClass,
@@ -311,7 +311,7 @@ var allTokenTypes = []protocol.SemanticTokenType{
 }
 
 func getTokenTypeIndex(tokenType protocol.SemanticTokenType) protocol.UInteger {
-	for i, t := range allTokenTypes {
+	for i, t := range AllTokenTypes {
 		if t == tokenType {
 			return protocol.UInteger(i)
 		}
@@ -319,7 +319,7 @@ func getTokenTypeIndex(tokenType protocol.SemanticTokenType) protocol.UInteger {
 	return 0
 }
 
-var allTokenModifiers = []protocol.SemanticTokenModifier{
+var AllTokenModifiers = []protocol.SemanticTokenModifier{
 	protocol.SemanticTokenModifierDeclaration,
 	protocol.SemanticTokenModifierDefinition,
 	protocol.SemanticTokenModifierReadonly,

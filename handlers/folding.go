@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -10,7 +10,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
+func TextDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
 	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error

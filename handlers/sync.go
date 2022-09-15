@@ -1,21 +1,20 @@
-package main
+package handlers
 
 import (
 	"errors"
-
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+func TextDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	documents.Add(params.TextDocument.URI, params.TextDocument.Text)
 	documents.Active = params.TextDocument.URI
 	sendDiagnostics(context.Notify, false)
 	return nil
 }
 
-func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+func TextDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	doc, ok := documents.Get(params.TextDocument.URI)
 	if !ok {
 		return errors.New("document sync error")
@@ -34,11 +33,11 @@ func textDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 	return nil
 }
 
-func textDocumentDidSave(*glsp.Context, *protocol.DidSaveTextDocumentParams) error {
+func TextDocumentDidSave(*glsp.Context, *protocol.DidSaveTextDocumentParams) error {
 	return nil
 }
 
-func textDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
+func TextDocumentDidClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
 	documents.Delete(params.TextDocument.URI)
 	return nil
 }

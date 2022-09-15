@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error

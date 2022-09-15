@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/DDP-Projekt/DDPLS/handlers"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/tliron/glsp/server"
@@ -24,15 +25,15 @@ func main() {
 		Initialized:                    initialized,
 		Shutdown:                       shutdown,
 		SetTrace:                       setTrace,
-		TextDocumentDidOpen:            textDocumentDidOpen,
-		TextDocumentDidSave:            textDocumentDidSave,
-		TextDocumentDidChange:          textDocumentDidChange,
-		TextDocumentDidClose:           textDocumentDidClose,
-		TextDocumentSemanticTokensFull: textDocumentSemanticTokensFull,
-		TextDocumentCompletion:         textDocumentCompletion,
-		TextDocumentHover:              textDocumentHover,
-		TextDocumentDefinition:         textDocumentDefinition,
-		TextDocumentFoldingRange:       textDocumentFoldingRange,
+		TextDocumentDidOpen:            handlers.TextDocumentDidOpen,
+		TextDocumentDidSave:            handlers.TextDocumentDidSave,
+		TextDocumentDidChange:          handlers.TextDocumentDidChange,
+		TextDocumentDidClose:           handlers.TextDocumentDidClose,
+		TextDocumentSemanticTokensFull: handlers.TextDocumentSemanticTokensFull,
+		TextDocumentCompletion:         handlers.TextDocumentCompletion,
+		TextDocumentHover:              handlers.TextDocumentHover,
+		TextDocumentDefinition:         handlers.TextDocumentDefinition,
+		TextDocumentFoldingRange:       handlers.TextDocumentFoldingRange,
 	}
 	server := server.NewServer(&handler, lsName, false)
 
@@ -61,8 +62,8 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 
 // helper for semantic token
 func tokenTypeLegend() []string {
-	legend := make([]string, len(allTokenTypes))
-	for i, tokenType := range allTokenTypes {
+	legend := make([]string, len(handlers.AllTokenTypes))
+	for i, tokenType := range handlers.AllTokenTypes {
 		legend[i] = string(tokenType)
 	}
 	return legend
@@ -70,8 +71,8 @@ func tokenTypeLegend() []string {
 
 // helper for semantic token
 func tokenModifierLegend() []string {
-	legend := make([]string, len(allTokenModifiers))
-	for i, tokenModifier := range allTokenModifiers {
+	legend := make([]string, len(handlers.AllTokenModifiers))
+	for i, tokenModifier := range handlers.AllTokenModifiers {
 		legend[i] = string(tokenModifier)
 	}
 	return legend

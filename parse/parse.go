@@ -1,4 +1,4 @@
-package main
+package parse
 
 import (
 	"errors"
@@ -7,6 +7,9 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+
+	"github.com/DDP-Projekt/DDPLS/documents"
 )
 
 var (
@@ -17,19 +20,31 @@ var (
 	parseMutex = sync.Mutex{}
 )
 
+func Ast() *ast.Ast {
+	return currentAst
+}
+
+func WithErrorHandler(errHndl scanner.ErrorHandler) (*ast.Ast, error) {
+	return parse(errHndl)
+}
+
+func WithoutHandler() (*ast.Ast, error) {
+	return parse(func(token.Token, string) {})
+}
+
 // concurrency-safe re-parsing of currentAst
-func parse(errHndl scanner.ErrorHandler) (err error) {
+func parse(errHndl scanner.ErrorHandler) (_ *ast.Ast, err error) {
 	parseMutex.Lock()
 	defer parseMutex.Unlock()
 
-	activeDoc, ok := getDocument(activeDocument)
+	activeDoc, ok := documents.Get(documents.Active)
 	if !ok {
-		return errors.New("activeDocument not in document map")
+		return nil, errors.New("activeDocument not in document map")
 	}
 
 	currentAst, err = parser.ParseSource(activeDoc.Path, []byte(activeDoc.Content), errHndl)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return currentAst, nil
 }

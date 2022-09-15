@@ -3,6 +3,9 @@ package main
 import (
 	"sort"
 
+	"github.com/DDP-Projekt/DDPLS/documents"
+	"github.com/DDP-Projekt/DDPLS/helper"
+	"github.com/DDP-Projekt/DDPLS/parse"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
@@ -11,19 +14,17 @@ import (
 )
 
 func textDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	activeDocument = params.TextDocument.URI
-	if err := parse(func(token.Token, string) {}); err != nil {
-		log.Errorf("parser error: %s", err)
+	documents.Active = params.TextDocument.URI
+	var currentAst *ast.Ast
+	var err error
+	if currentAst, err = parse.WithoutHandler(); err != nil {
 		return nil, err
 	}
 
-	currentAst := currentAst
 	tokenizer := &semanticTokenizer{}
 
-	path, err := uriToPath(activeDocument)
-	if err != nil {
-		log.Warningf("url.ParseRequestURI: %s", err)
-	}
+	act, _ := documents.Get(documents.Active)
+	path := act.Uri.Filepath()
 
 	for _, stmt := range currentAst.Statements {
 		if stmt.Token().File == path {
@@ -185,14 +186,14 @@ func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 
 		for i, arg := range args {
 			argRange := arg.GetRange()
-			cutRange := cutRangeOut(rang, argRange)
-			if getRangeLength(cutRange[0]) != 0 {
+			cutRange := helper.CutRangeOut(rang, argRange)
+			if helper.GetRangeLength(cutRange[0]) != 0 {
 				t.add(newHightlightedToken(cutRange[0], protocol.SemanticTokenTypeFunction, nil))
 			}
 			arg.Accept(t)
 			rang = token.Range{Start: cutRange[1].Start, End: rang.End}
 
-			if i == len(e.Args)-1 && getRangeLength(cutRange[1]) != 0 {
+			if i == len(e.Args)-1 && helper.GetRangeLength(cutRange[1]) != 0 {
 				t.add(newHightlightedToken(cutRange[1], protocol.SemanticTokenTypeFunction, nil))
 			}
 		}
@@ -276,7 +277,7 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 	return highlightedToken{
 		line:      rang.Start.Line,
 		column:    rang.Start.Column,
-		length:    getRangeLength(rang),
+		length:    helper.GetRangeLength(rang),
 		tokenType: tokType,
 		modifiers: modifiers,
 	}

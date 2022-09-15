@@ -1,4 +1,4 @@
-package main
+package uri
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
 )
 
@@ -23,10 +24,10 @@ func (uri URI) IsFile() bool {
 
 // Filename returns the file path for the given URI.
 // It is an error to call this on a URI that is not a valid filename.
-func (uri URI) Filename() string {
+func (uri URI) Filepath() string {
 	filename, err := filename(uri)
 	if err != nil {
-		panic(err)
+		log.Warningf("uri to filepath: %s", err)
 	}
 	return filepath.FromSlash(filename)
 }
@@ -71,7 +72,7 @@ slow:
 	return u.Path, nil
 }
 
-func URIFromURI(s string) URI {
+func FromURI(s string) URI {
 	if !strings.HasPrefix(s, "file://") {
 		return URI(s)
 	}
@@ -84,7 +85,7 @@ func URIFromURI(s string) URI {
 	// in particular over-escapes :, @, etc. Unescape and re-encode to canonicalize.
 	path, err := url.PathUnescape(s[len("file://"):])
 	if err != nil {
-		panic(err)
+		log.Errorf("url.PathUnescape: %s", err)
 	}
 
 	// File URIs from Windows may have lowercase drive letters.
@@ -102,7 +103,7 @@ func URIFromURI(s string) URI {
 // Lexically unequal URIs may compare equal if they are "file:" URIs
 // that share the same base name (ignoring case) and denote the same
 // file device/inode, according to stat(2).
-func CompareURI(a, b URI) int {
+func Compare(a, b URI) int {
 	if equalURI(a, b) {
 		return 0
 	}
@@ -144,7 +145,7 @@ func equalURI(a, b URI) bool {
 //
 // For empty paths, URIFromPath returns the empty URI "".
 // For non-empty paths, URIFromPath returns a uri with the file:// scheme.
-func URIFromPath(path string) URI {
+func FromPath(path string) URI {
 	if path == "" {
 		return ""
 	}

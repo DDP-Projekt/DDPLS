@@ -1,19 +1,22 @@
 package main
 
 import (
+	"github.com/DDP-Projekt/DDPLS/documents"
+	"github.com/DDP-Projekt/DDPLS/helper"
+	"github.com/DDP-Projekt/DDPLS/parse"
+	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
-	activeDocument = params.TextDocument.URI
-	if err := parse(func(token.Token, string) {}); err != nil {
-		log.Errorf("parser error: %s", err)
+	documents.Active = params.TextDocument.URI
+	var currentAst *ast.Ast
+	var err error
+	if currentAst, err = parse.WithoutHandler(); err != nil {
 		return nil, err
 	}
-	currentAst := currentAst
 
 	definition := &definitionVisitor{
 		location:       nil,
@@ -22,7 +25,7 @@ func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionPa
 	}
 
 	for _, stmt := range currentAst.Statements {
-		if stmt.Token().File == currentAst.File && isInRange(stmt.GetRange(), definition.pos) {
+		if stmt.Token().File == currentAst.File && helper.IsInRange(stmt.GetRange(), definition.pos) {
 			stmt.Accept(definition)
 			break
 		}
@@ -41,13 +44,13 @@ func (def *definitionVisitor) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
 	return def
 }
 func (def *definitionVisitor) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
-	if isInRange(d.InitVal.GetRange(), def.pos) {
+	if helper.IsInRange(d.InitVal.GetRange(), def.pos) {
 		d.InitVal.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
-	if d.Body != nil && isInRange(d.Body.GetRange(), def.pos) {
+	if d.Body != nil && helper.IsInRange(d.Body.GetRange(), def.pos) {
 		d.Body.Accept(def)
 	}
 	return def
@@ -59,17 +62,17 @@ func (def *definitionVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
 func (def *definitionVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
 	if decl, ok := def.currentSymbols.LookupVar(e.Literal.Literal); ok {
 		def.location = &protocol.Location{
-			URI:   string(URIFromPath(decl.Token().File)),
-			Range: toProtocolRange(decl.GetRange()),
+			URI:   string(uri.FromPath(decl.Token().File)),
+			Range: helper.ToProtocolRange(decl.GetRange()),
 		}
 	}
 	return def
 }
 func (def *definitionVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	if isInRange(e.Index.GetRange(), def.pos) {
+	if helper.IsInRange(e.Index.GetRange(), def.pos) {
 		return e.Index.Accept(def)
 	}
-	if isInRange(e.Lhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		return e.Lhs.Accept(def)
 	}
 	return def
@@ -92,55 +95,55 @@ func (def *definitionVisitor) VisitStringLit(e *ast.StringLit) ast.Visitor {
 func (def *definitionVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
 	if e.Values != nil {
 		for _, expr := range e.Values {
-			if isInRange(expr.GetRange(), def.pos) {
+			if helper.IsInRange(expr.GetRange(), def.pos) {
 				return expr.Accept(def)
 			}
 		}
 	} else if e.Count != nil && e.Value != nil {
-		if isInRange(e.Count.GetRange(), def.pos) {
+		if helper.IsInRange(e.Count.GetRange(), def.pos) {
 			return e.Count.Accept(def)
 		}
-		if isInRange(e.Value.GetRange(), def.pos) {
+		if helper.IsInRange(e.Value.GetRange(), def.pos) {
 			return e.Value.Accept(def)
 		}
 	}
 	return def
 }
 func (def *definitionVisitor) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	if isInRange(e.Rhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
-	if isInRange(e.Lhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
-	if isInRange(e.Rhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
-	if isInRange(e.Lhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
-	if isInRange(e.Mid.GetRange(), def.pos) {
+	if helper.IsInRange(e.Mid.GetRange(), def.pos) {
 		e.Mid.Accept(def)
 	}
-	if isInRange(e.Rhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
-	if isInRange(e.Lhs.GetRange(), def.pos) {
+	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
-	if isInRange(e.Expr.GetRange(), def.pos) {
+	if helper.IsInRange(e.Expr.GetRange(), def.pos) {
 		e.Expr.Accept(def)
 	}
 	return def
@@ -148,15 +151,15 @@ func (def *definitionVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {
-			if isInRange(expr.GetRange(), def.pos) {
+			if helper.IsInRange(expr.GetRange(), def.pos) {
 				return expr.Accept(def)
 			}
 		}
 	}
 	if fun, ok := def.currentSymbols.LookupFunc(e.Name); ok {
 		def.location = &protocol.Location{
-			URI:   string(URIFromPath(fun.Token().File)),
-			Range: toProtocolRange(fun.GetRange()),
+			URI:   string(uri.FromPath(fun.Token().File)),
+			Range: helper.ToProtocolRange(fun.GetRange()),
 		}
 	}
 	return def
@@ -172,10 +175,10 @@ func (def *definitionVisitor) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
 	return s.Expr.Accept(def)
 }
 func (def *definitionVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	if isInRange(s.Var.GetRange(), def.pos) {
+	if helper.IsInRange(s.Var.GetRange(), def.pos) {
 		return s.Var.Accept(def)
 	}
-	if isInRange(s.Rhs.GetRange(), def.pos) {
+	if helper.IsInRange(s.Rhs.GetRange(), def.pos) {
 		return s.Rhs.Accept(def)
 	}
 	return def
@@ -183,7 +186,7 @@ func (def *definitionVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
 func (def *definitionVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	def.currentSymbols = s.Symbols
 	for _, stmt := range s.Statements {
-		if isInRange(stmt.GetRange(), def.pos) {
+		if helper.IsInRange(stmt.GetRange(), def.pos) {
 			return stmt.Accept(def)
 		}
 	}
@@ -191,49 +194,49 @@ func (def *definitionVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
 	return def
 }
 func (def *definitionVisitor) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	if isInRange(s.Condition.GetRange(), def.pos) {
+	if helper.IsInRange(s.Condition.GetRange(), def.pos) {
 		return s.Condition.Accept(def)
 	}
-	if isInRange(s.Then.GetRange(), def.pos) {
+	if helper.IsInRange(s.Then.GetRange(), def.pos) {
 		return s.Then.Accept(def)
 	}
-	if s.Else != nil && isInRange(s.Else.GetRange(), def.pos) {
+	if s.Else != nil && helper.IsInRange(s.Else.GetRange(), def.pos) {
 		return s.Else.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	if isInRange(s.Condition.GetRange(), def.pos) {
+	if helper.IsInRange(s.Condition.GetRange(), def.pos) {
 		return s.Condition.Accept(def)
 	}
-	if isInRange(s.Body.GetRange(), def.pos) {
+	if helper.IsInRange(s.Body.GetRange(), def.pos) {
 		return s.Body.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitForStmt(s *ast.ForStmt) ast.Visitor {
-	if isInRange(s.Initializer.GetRange(), def.pos) {
+	if helper.IsInRange(s.Initializer.GetRange(), def.pos) {
 		return s.Initializer.Accept(def)
 	}
-	if isInRange(s.To.GetRange(), def.pos) {
+	if helper.IsInRange(s.To.GetRange(), def.pos) {
 		return s.To.Accept(def)
 	}
-	if s.StepSize != nil && isInRange(s.StepSize.GetRange(), def.pos) {
+	if s.StepSize != nil && helper.IsInRange(s.StepSize.GetRange(), def.pos) {
 		return s.StepSize.Accept(def)
 	}
-	if isInRange(s.Body.GetRange(), def.pos) {
+	if helper.IsInRange(s.Body.GetRange(), def.pos) {
 		return s.Body.Accept(def)
 	}
 	return def
 }
 func (def *definitionVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
-	if isInRange(s.Initializer.GetRange(), def.pos) {
+	if helper.IsInRange(s.Initializer.GetRange(), def.pos) {
 		return s.Initializer.Accept(def)
 	}
-	if isInRange(s.In.GetRange(), def.pos) {
+	if helper.IsInRange(s.In.GetRange(), def.pos) {
 		return s.In.Accept(def)
 	}
-	if isInRange(s.Body.GetRange(), def.pos) {
+	if helper.IsInRange(s.Body.GetRange(), def.pos) {
 		return s.Body.Accept(def)
 	}
 	return def
@@ -242,7 +245,7 @@ func (def *definitionVisitor) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor
 	return s.Call.Accept(def)
 }
 func (def *definitionVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	if s.Value != nil && isInRange(s.Value.GetRange(), def.pos) {
+	if s.Value != nil && helper.IsInRange(s.Value.GetRange(), def.pos) {
 		return s.Value.Accept(def)
 	}
 	return def

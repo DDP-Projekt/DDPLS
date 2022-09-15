@@ -1,14 +1,15 @@
-package main
+package helper
 
 import (
 	"strings"
 
+	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 // converts a token.Range to a protocol.Range
-func toProtocolRange(rang token.Range) protocol.Range {
+func ToProtocolRange(rang token.Range) protocol.Range {
 	return protocol.Range{
 		Start: protocol.Position{
 			Line:      uint32(rang.Start.Line - 1),
@@ -22,11 +23,11 @@ func toProtocolRange(rang token.Range) protocol.Range {
 }
 
 // returns the length of a token.Range
-func getRangeLength(rang token.Range) int {
+func GetRangeLength(rang token.Range) int {
 	if rang.Start.Line == rang.End.Line {
 		return rang.End.Column - rang.Start.Column
 	}
-	doc, _ := getDocument(activeDocument)
+	doc, _ := documents.Get(documents.Active)
 	lines := strings.Split(doc.Content, "\n")
 	length := len(lines[rang.Start.Line-1][rang.Start.Column-1:])
 	for i := rang.Start.Line; i < rang.End.Line-1; i++ {
@@ -39,7 +40,7 @@ func getRangeLength(rang token.Range) int {
 // returns two new ranges, constructed by cutting innerRange out of wholeRange
 // innerRange must be completely contained in wholeRange
 // the resulting ranges are wholeRange.Start - innerRange.Start and innerRange.End - wholeRange.End
-func cutRangeOut(wholeRange, innerRange token.Range) []token.Range {
+func CutRangeOut(wholeRange, innerRange token.Range) []token.Range {
 	return []token.Range{
 		{
 			Start: wholeRange.Start,
@@ -53,7 +54,7 @@ func cutRangeOut(wholeRange, innerRange token.Range) []token.Range {
 }
 
 // returns wether the given protocol.Position is inside rang
-func isInRange(rang token.Range, pos protocol.Position) bool {
+func IsInRange(rang token.Range, pos protocol.Position) bool {
 	if pos.Line < uint32(rang.Start.Line-1) || pos.Line > uint32(rang.End.Line-1) {
 		return false
 	}
@@ -69,7 +70,7 @@ func isInRange(rang token.Range, pos protocol.Position) bool {
 	return true
 }
 
-func contains[T comparable](s []T, e T) bool {
+func Contains[T comparable](s []T, e T) bool {
 	for _, a := range s {
 		if a == e {
 			return true

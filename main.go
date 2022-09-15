@@ -32,6 +32,7 @@ func main() {
 		TextDocumentCompletion:         textDocumentCompletion,
 		TextDocumentHover:              textDocumentHover,
 		TextDocumentDefinition:         textDocumentDefinition,
+		TextDocumentFoldingRange:       textDocumentFoldingRange,
 	}
 	server := server.NewServer(&handler, lsName, false)
 

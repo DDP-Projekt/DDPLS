@@ -75,10 +75,10 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
 	if decl, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
 		val := ""
 		if decl.Token().File == h.file {
-			val = fmt.Sprintf("[Z %d, S %d]: %s", decl.Name.Line, decl.Name.Column, decl.Type)
+			val = fmt.Sprintf("[Z %d, S %d]: %s", decl.Name.Line(), decl.Name.Column(), decl.Type)
 		} else {
 			datei := h.getHoverFilePath(decl.Name.File)
-			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, decl.Name.Line, decl.Name.Column, decl.Type)
+			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, decl.Name.Line(), decl.Name.Column(), decl.Type)
 		}
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
@@ -197,7 +197,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			start, end := declRange.IndexesIn(string(content))
 
 			datei := h.getHoverFilePath(file)
-			val = fmt.Sprintf("[D %s, Z %d, S %d]\n%s", datei, fun.Token().Line, fun.Token().Column, content[start:end])
+			val = fmt.Sprintf("[D %s, Z %d, S %d]\n%s", datei, fun.Token().Line(), fun.Token().Column(), content[start:end])
 
 			if fun.Body != nil {
 				val += "\n..."
@@ -210,7 +210,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			}
 		} else {
 			start, end := declRange.IndexesIn(h.doc.Content)
-			val = fmt.Sprintf("[Z %d, S %d]\n%s", fun.Token().Line, fun.Token().Column, h.doc.Content[start:end])
+			val = fmt.Sprintf("[Z %d, S %d]\n%s", fun.Token().Line(), fun.Token().Column(), h.doc.Content[start:end])
 
 			if fun.Body != nil {
 				val += "\n..."

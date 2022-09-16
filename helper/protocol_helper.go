@@ -25,7 +25,7 @@ func ToProtocolRange(rang token.Range) protocol.Range {
 // returns the length of a token.Range
 func GetRangeLength(rang token.Range) int {
 	if rang.Start.Line == rang.End.Line {
-		return rang.End.Column - rang.Start.Column
+		return int(rang.End.Column - rang.Start.Column)
 	}
 	doc, _ := documents.Get(documents.Active)
 	lines := strings.Split(doc.Content, "\n")

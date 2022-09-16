@@ -130,10 +130,7 @@ func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.Visitor {
 	return t
 }
 func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	// TODO: fix multiline stringliterals
-	rang := e.GetRange()
-	rang.End.Column -= 1
-	t.add(newHightlightedToken(rang, protocol.SemanticTokenTypeString, nil))
+	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
 	return t
 }
 func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
@@ -166,7 +163,6 @@ func (t *semanticTokenizer) VisitGrouping(e *ast.Grouping) ast.Visitor {
 	return e.Expr.Accept(t)
 }
 func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
-	// TODO: fix multiline stringliterals
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
 		args := make([]ast.Expression, 0, len(e.Args))
@@ -275,8 +271,8 @@ func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, 
 		modifiers = make([]protocol.SemanticTokenModifier, 0)
 	}
 	return highlightedToken{
-		line:      rang.Start.Line,
-		column:    rang.Start.Column,
+		line:      int(rang.Start.Line),
+		column:    int(rang.Start.Column),
 		length:    helper.GetRangeLength(rang),
 		tokenType: tokType,
 		modifiers: modifiers,

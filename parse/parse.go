@@ -5,9 +5,8 @@ import (
 	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/pkg/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/pkg/parser"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 )
@@ -24,16 +23,16 @@ func Ast() *ast.Ast {
 	return currentAst
 }
 
-func WithErrorHandler(errHndl scanner.ErrorHandler) (*ast.Ast, error) {
+func WithErrorHandler(errHndl ddperror.Handler) (*ast.Ast, error) {
 	return parse(errHndl)
 }
 
 func WithoutHandler() (*ast.Ast, error) {
-	return parse(func(token.Token, string) {})
+	return parse(ddperror.EmptyHandler)
 }
 
 // concurrency-safe re-parsing of currentAst
-func parse(errHndl scanner.ErrorHandler) (_ *ast.Ast, err error) {
+func parse(errHndl ddperror.Handler) (_ *ast.Ast, err error) {
 	parseMutex.Lock()
 	defer parseMutex.Unlock()
 

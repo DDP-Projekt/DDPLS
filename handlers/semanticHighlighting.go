@@ -85,14 +85,13 @@ func (t *semanticTokenizer) add(tok highlightedToken) {
 	t.tokens = append(t.tokens, tok)
 }
 
-func (t *semanticTokenizer) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
-	return t
+func (t *semanticTokenizer) VisitBadDecl(d *ast.BadDecl) {
 }
-func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
+func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) {
 	t.add(newHightlightedToken(token.NewRange(d.Name, d.Name), protocol.SemanticTokenTypeVariable, nil))
-	return d.InitVal.Accept(t)
+	d.InitVal.Accept(t)
 }
-func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
+func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
 	t.add(newHightlightedToken(token.NewRange(d.Name, d.Name), protocol.SemanticTokenTypeVariable, nil))
 	for _, param := range d.ParamNames {
 		t.add(newHightlightedToken(token.NewRange(param, param), protocol.SemanticTokenTypeParameter, nil))
@@ -100,40 +99,32 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
 	if d.Body != nil {
 		d.Body.Accept(t)
 	}
-	return t
 }
 
-func (t *semanticTokenizer) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	return t
+func (t *semanticTokenizer) VisitBadExpr(e *ast.BadExpr) {
 }
-func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.Visitor {
+func (t *semanticTokenizer) VisitIdent(e *ast.Ident) {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeVariable, nil))
-	return t
 }
-func (t *semanticTokenizer) VisitIndexing(e *ast.Indexing) ast.Visitor {
+func (t *semanticTokenizer) VisitIndexing(e *ast.Indexing) {
 	e.Lhs.Accept(t)
-	return e.Index.Accept(t)
+	e.Index.Accept(t)
 }
-func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.Visitor {
+func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
-	return t
 }
-func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
+func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
-	return t
 }
-func (t *semanticTokenizer) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
-	return t
+func (t *semanticTokenizer) VisitBoolLit(e *ast.BoolLit) {
 }
-func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.Visitor {
+func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
-	return t
 }
-func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.Visitor {
+func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) {
 	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
-	return t
 }
-func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
+func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
 		for _, expr := range e.Values {
 			expr.Accept(t)
@@ -142,27 +133,26 @@ func (t *semanticTokenizer) VisitListLit(e *ast.ListLit) ast.Visitor {
 		e.Count.Accept(t)
 		e.Value.Accept(t)
 	}
-	return t
 }
-func (t *semanticTokenizer) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	return e.Rhs.Accept(t)
+func (t *semanticTokenizer) VisitUnaryExpr(e *ast.UnaryExpr) {
+	e.Rhs.Accept(t)
 }
-func (t *semanticTokenizer) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+func (t *semanticTokenizer) VisitBinaryExpr(e *ast.BinaryExpr) {
 	e.Lhs.Accept(t)
-	return e.Rhs.Accept(t)
+	e.Rhs.Accept(t)
 }
-func (t *semanticTokenizer) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+func (t *semanticTokenizer) VisitTernaryExpr(e *ast.TernaryExpr) {
 	e.Lhs.Accept(t)
 	e.Mid.Accept(t)
-	return e.Rhs.Accept(t)
+	e.Rhs.Accept(t)
 }
-func (t *semanticTokenizer) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
-	return e.Lhs.Accept(t)
+func (t *semanticTokenizer) VisitCastExpr(e *ast.CastExpr) {
+	e.Lhs.Accept(t)
 }
-func (t *semanticTokenizer) VisitGrouping(e *ast.Grouping) ast.Visitor {
-	return e.Expr.Accept(t)
+func (t *semanticTokenizer) VisitGrouping(e *ast.Grouping) {
+	e.Expr.Accept(t)
 }
-func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
+func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
 		args := make([]ast.Expression, 0, len(e.Args))
@@ -196,33 +186,31 @@ func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 	} else {
 		t.add(newHightlightedToken(rang, protocol.SemanticTokenTypeFunction, nil))
 	}
-	return t
 }
 
-func (t *semanticTokenizer) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	return t
+func (t *semanticTokenizer) VisitBadStmt(s *ast.BadStmt) {
 }
-func (t *semanticTokenizer) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
-	return s.Decl.Accept(t)
+func (t *semanticTokenizer) VisitDeclStmt(s *ast.DeclStmt) {
+	s.Decl.Accept(t)
 }
-func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
-	return s.Expr.Accept(t)
+func (t *semanticTokenizer) VisitExprStmt(s *ast.ExprStmt) {
+	s.Expr.Accept(t)
 }
-func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitAssignStmt(s *ast.AssignStmt) {
 	if s.Token().Type == token.SPEICHERE {
 		s.Rhs.Accept(t)
-		return s.Var.Accept(t)
+		s.Var.Accept(t)
+		return
 	}
 	s.Var.Accept(t)
-	return s.Rhs.Accept(t)
+	s.Rhs.Accept(t)
 }
-func (t *semanticTokenizer) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitBlockStmt(s *ast.BlockStmt) {
 	for _, stmt := range s.Statements {
 		stmt.Accept(t)
 	}
-	return t
 }
-func (t *semanticTokenizer) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitIfStmt(s *ast.IfStmt) {
 	s.Condition.Accept(t)
 	if s.Then != nil {
 		s.Then.Accept(t)
@@ -230,9 +218,8 @@ func (t *semanticTokenizer) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
 	if s.Else != nil {
 		s.Else.Accept(t)
 	}
-	return t
 }
-func (t *semanticTokenizer) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitWhileStmt(s *ast.WhileStmt) {
 	switch s.While.Type {
 	case token.SOLANGE:
 		s.Condition.Accept(t)
@@ -241,29 +228,25 @@ func (t *semanticTokenizer) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
 		s.Body.Accept(t)
 		s.Condition.Accept(t)
 	}
-	return t
 }
-func (t *semanticTokenizer) VisitForStmt(s *ast.ForStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitForStmt(s *ast.ForStmt) {
 	s.Initializer.Accept(t)
 	s.To.Accept(t)
 	if s.StepSize != nil {
 		s.StepSize.Accept(t)
 	}
-	return s.Body.Accept(t)
+	s.Body.Accept(t)
 }
-func (t *semanticTokenizer) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	s.Initializer.Accept(t)
 	s.In.Accept(t)
-	return s.Body.Accept(t)
+	s.Body.Accept(t)
 }
-func (t *semanticTokenizer) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(t)
-}
-func (t *semanticTokenizer) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+func (t *semanticTokenizer) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value == nil {
-		return t
+		return
 	}
-	return s.Value.Accept(t)
+	s.Value.Accept(t)
 }
 
 func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, modifiers []protocol.SemanticTokenModifier) highlightedToken {

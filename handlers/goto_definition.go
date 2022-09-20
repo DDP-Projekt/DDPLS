@@ -40,91 +40,82 @@ type definitionVisitor struct {
 	pos            protocol.Position
 }
 
-func (def *definitionVisitor) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitBadDecl(d *ast.BadDecl) {
 }
-func (def *definitionVisitor) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
+func (def *definitionVisitor) VisitVarDecl(d *ast.VarDecl) {
 	if helper.IsInRange(d.InitVal.GetRange(), def.pos) {
 		d.InitVal.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
+func (def *definitionVisitor) VisitFuncDecl(d *ast.FuncDecl) {
 	if d.Body != nil && helper.IsInRange(d.Body.GetRange(), def.pos) {
 		d.Body.Accept(def)
 	}
-	return def
 }
 
-func (def *definitionVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitBadExpr(e *ast.BadExpr) {
 }
-func (def *definitionVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
+func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := def.currentSymbols.LookupVar(e.Literal.Literal); ok {
 		def.location = &protocol.Location{
 			URI:   string(uri.FromPath(decl.Token().File)),
 			Range: helper.ToProtocolRange(decl.GetRange()),
 		}
 	}
-	return def
 }
-func (def *definitionVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
+func (def *definitionVisitor) VisitIndexing(e *ast.Indexing) {
 	if helper.IsInRange(e.Index.GetRange(), def.pos) {
-		return e.Index.Accept(def)
+		e.Index.Accept(def)
+		return
 	}
 	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
-		return e.Lhs.Accept(def)
+		e.Lhs.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitIntLit(e *ast.IntLit) {
 }
-func (def *definitionVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitFloatLit(e *ast.FloatLit) {
 }
-func (def *definitionVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitBoolLit(e *ast.BoolLit) {
 }
-func (def *definitionVisitor) VisitCharLit(e *ast.CharLit) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitCharLit(e *ast.CharLit) {
 }
-func (def *definitionVisitor) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitStringLit(e *ast.StringLit) {
 }
-func (def *definitionVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
+func (def *definitionVisitor) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
 		for _, expr := range e.Values {
 			if helper.IsInRange(expr.GetRange(), def.pos) {
-				return expr.Accept(def)
+				expr.Accept(def)
+				return
 			}
 		}
 	} else if e.Count != nil && e.Value != nil {
 		if helper.IsInRange(e.Count.GetRange(), def.pos) {
-			return e.Count.Accept(def)
+			e.Count.Accept(def)
+			return
 		}
 		if helper.IsInRange(e.Value.GetRange(), def.pos) {
-			return e.Value.Accept(def)
+			e.Value.Accept(def)
+			return
 		}
 	}
-	return def
 }
-func (def *definitionVisitor) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
+func (def *definitionVisitor) VisitUnaryExpr(e *ast.UnaryExpr) {
 	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+func (def *definitionVisitor) VisitBinaryExpr(e *ast.BinaryExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
 	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+func (def *definitionVisitor) VisitTernaryExpr(e *ast.TernaryExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
@@ -134,25 +125,23 @@ func (def *definitionVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	if helper.IsInRange(e.Rhs.GetRange(), def.pos) {
 		e.Rhs.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+func (def *definitionVisitor) VisitCastExpr(e *ast.CastExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), def.pos) {
 		e.Lhs.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
+func (def *definitionVisitor) VisitGrouping(e *ast.Grouping) {
 	if helper.IsInRange(e.Expr.GetRange(), def.pos) {
 		e.Expr.Accept(def)
 	}
-	return def
 }
-func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
+func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {
 			if helper.IsInRange(expr.GetRange(), def.pos) {
-				return expr.Accept(def)
+				expr.Accept(def)
+				return
 			}
 		}
 	}
@@ -162,91 +151,94 @@ func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			Range: helper.ToProtocolRange(fun.GetRange()),
 		}
 	}
-	return def
 }
 
-func (def *definitionVisitor) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	return def
+func (def *definitionVisitor) VisitBadStmt(s *ast.BadStmt) {
 }
-func (def *definitionVisitor) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
-	return s.Decl.Accept(def)
+func (def *definitionVisitor) VisitDeclStmt(s *ast.DeclStmt) {
+	s.Decl.Accept(def)
 }
-func (def *definitionVisitor) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
-	return s.Expr.Accept(def)
+func (def *definitionVisitor) VisitExprStmt(s *ast.ExprStmt) {
+	s.Expr.Accept(def)
 }
-func (def *definitionVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+func (def *definitionVisitor) VisitAssignStmt(s *ast.AssignStmt) {
 	if helper.IsInRange(s.Var.GetRange(), def.pos) {
-		return s.Var.Accept(def)
+		s.Var.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.Rhs.GetRange(), def.pos) {
-		return s.Rhs.Accept(def)
+		s.Rhs.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
+func (def *definitionVisitor) VisitBlockStmt(s *ast.BlockStmt) {
 	def.currentSymbols = s.Symbols
 	for _, stmt := range s.Statements {
 		if helper.IsInRange(stmt.GetRange(), def.pos) {
-			return stmt.Accept(def)
+			stmt.Accept(def)
+			return
 		}
 	}
 	def.currentSymbols = def.currentSymbols.Enclosing
-	return def
 }
-func (def *definitionVisitor) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
+func (def *definitionVisitor) VisitIfStmt(s *ast.IfStmt) {
 	if helper.IsInRange(s.Condition.GetRange(), def.pos) {
-		return s.Condition.Accept(def)
+		s.Condition.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.Then.GetRange(), def.pos) {
-		return s.Then.Accept(def)
+		s.Then.Accept(def)
+		return
 	}
 	if s.Else != nil && helper.IsInRange(s.Else.GetRange(), def.pos) {
-		return s.Else.Accept(def)
+		s.Else.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
+func (def *definitionVisitor) VisitWhileStmt(s *ast.WhileStmt) {
 	if helper.IsInRange(s.Condition.GetRange(), def.pos) {
-		return s.Condition.Accept(def)
+		s.Condition.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), def.pos) {
-		return s.Body.Accept(def)
+		s.Body.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitForStmt(s *ast.ForStmt) ast.Visitor {
+func (def *definitionVisitor) VisitForStmt(s *ast.ForStmt) {
 	if helper.IsInRange(s.Initializer.GetRange(), def.pos) {
-		return s.Initializer.Accept(def)
+		s.Initializer.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.To.GetRange(), def.pos) {
-		return s.To.Accept(def)
+		s.To.Accept(def)
+		return
 	}
 	if s.StepSize != nil && helper.IsInRange(s.StepSize.GetRange(), def.pos) {
-		return s.StepSize.Accept(def)
+		s.StepSize.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), def.pos) {
-		return s.Body.Accept(def)
+		s.Body.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+func (def *definitionVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	if helper.IsInRange(s.Initializer.GetRange(), def.pos) {
-		return s.Initializer.Accept(def)
+		s.Initializer.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.In.GetRange(), def.pos) {
-		return s.In.Accept(def)
+		s.In.Accept(def)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), def.pos) {
-		return s.Body.Accept(def)
+		s.Body.Accept(def)
+		return
 	}
-	return def
 }
-func (def *definitionVisitor) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(def)
-}
-func (def *definitionVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+func (def *definitionVisitor) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value != nil && helper.IsInRange(s.Value.GetRange(), def.pos) {
-		return s.Value.Accept(def)
+		s.Value.Accept(def)
 	}
-	return def
 }

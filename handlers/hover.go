@@ -52,26 +52,24 @@ type hoverVisitor struct {
 	file           string
 }
 
-func (h *hoverVisitor) VisitBadDecl(d *ast.BadDecl) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitBadDecl(d *ast.BadDecl) {
+
 }
-func (h *hoverVisitor) VisitVarDecl(d *ast.VarDecl) ast.Visitor {
+func (h *hoverVisitor) VisitVarDecl(d *ast.VarDecl) {
 	if helper.IsInRange(d.InitVal.GetRange(), h.pos) {
 		d.InitVal.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitFuncDecl(d *ast.FuncDecl) ast.Visitor {
+func (h *hoverVisitor) VisitFuncDecl(d *ast.FuncDecl) {
 	if d.Body != nil && helper.IsInRange(d.Body.GetRange(), h.pos) {
 		d.Body.Accept(h)
 	}
-	return h
 }
 
-func (h *hoverVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitBadExpr(e *ast.BadExpr) {
+
 }
-func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
+func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
 		val := ""
 		if decl.Token().File == h.file {
@@ -89,65 +87,65 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
 			Range: &pRange,
 		}
 	}
-	return h
 }
-func (h *hoverVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
+func (h *hoverVisitor) VisitIndexing(e *ast.Indexing) {
 	if helper.IsInRange(e.Index.GetRange(), h.pos) {
-		return e.Index.Accept(h)
+		e.Index.Accept(h)
+		return
 	}
 	if helper.IsInRange(e.Lhs.GetRange(), h.pos) {
-		return e.Lhs.Accept(h)
+		e.Lhs.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitIntLit(e *ast.IntLit) {
+
 }
-func (h *hoverVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitFloatLit(e *ast.FloatLit) {
+
 }
-func (h *hoverVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitBoolLit(e *ast.BoolLit) {
+
 }
-func (h *hoverVisitor) VisitCharLit(e *ast.CharLit) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitCharLit(e *ast.CharLit) {
+
 }
-func (h *hoverVisitor) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitStringLit(e *ast.StringLit) {
+
 }
-func (h *hoverVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
+func (h *hoverVisitor) VisitListLit(e *ast.ListLit) {
 	if e.Values != nil {
 		for _, expr := range e.Values {
 			if helper.IsInRange(expr.GetRange(), h.pos) {
-				return expr.Accept(h)
+				expr.Accept(h)
+				return
 			}
 		}
 	} else if e.Count != nil && e.Value != nil {
 		if helper.IsInRange(e.Count.GetRange(), h.pos) {
-			return e.Count.Accept(h)
+			e.Count.Accept(h)
+			return
 		}
 		if helper.IsInRange(e.Value.GetRange(), h.pos) {
-			return e.Value.Accept(h)
+			e.Value.Accept(h)
+			return
 		}
 	}
-	return h
 }
-func (h *hoverVisitor) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
+func (h *hoverVisitor) VisitUnaryExpr(e *ast.UnaryExpr) {
 	if helper.IsInRange(e.Rhs.GetRange(), h.pos) {
 		e.Rhs.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
+func (h *hoverVisitor) VisitBinaryExpr(e *ast.BinaryExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), h.pos) {
 		e.Lhs.Accept(h)
 	}
 	if helper.IsInRange(e.Rhs.GetRange(), h.pos) {
 		e.Rhs.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
+func (h *hoverVisitor) VisitTernaryExpr(e *ast.TernaryExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), h.pos) {
 		e.Lhs.Accept(h)
 	}
@@ -157,25 +155,23 @@ func (h *hoverVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
 	if helper.IsInRange(e.Rhs.GetRange(), h.pos) {
 		e.Rhs.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
+func (h *hoverVisitor) VisitCastExpr(e *ast.CastExpr) {
 	if helper.IsInRange(e.Lhs.GetRange(), h.pos) {
 		e.Lhs.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
+func (h *hoverVisitor) VisitGrouping(e *ast.Grouping) {
 	if helper.IsInRange(e.Expr.GetRange(), h.pos) {
 		e.Expr.Accept(h)
 	}
-	return h
 }
-func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
+func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {
 			if helper.IsInRange(expr.GetRange(), h.pos) {
-				return expr.Accept(h)
+				expr.Accept(h)
+				return
 			}
 		}
 	}
@@ -232,95 +228,99 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
 			Range: &pRange,
 		}
 	}
-	return h
 }
 
-func (h *hoverVisitor) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
-	return h
+func (h *hoverVisitor) VisitBadStmt(s *ast.BadStmt) {
+
 }
-func (h *hoverVisitor) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
-	return s.Decl.Accept(h)
+func (h *hoverVisitor) VisitDeclStmt(s *ast.DeclStmt) {
+	s.Decl.Accept(h)
 }
-func (h *hoverVisitor) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
-	return s.Expr.Accept(h)
+func (h *hoverVisitor) VisitExprStmt(s *ast.ExprStmt) {
+	s.Expr.Accept(h)
 }
-func (h *hoverVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
+func (h *hoverVisitor) VisitAssignStmt(s *ast.AssignStmt) {
 	if helper.IsInRange(s.Var.GetRange(), h.pos) {
-		return s.Var.Accept(h)
+		s.Var.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.Rhs.GetRange(), h.pos) {
-		return s.Rhs.Accept(h)
+		s.Rhs.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
+func (h *hoverVisitor) VisitBlockStmt(s *ast.BlockStmt) {
 	h.currentSymbols = s.Symbols
 	for _, stmt := range s.Statements {
 		if helper.IsInRange(stmt.GetRange(), h.pos) {
-			return stmt.Accept(h)
+			stmt.Accept(h)
+			return
 		}
 	}
 	h.currentSymbols = h.currentSymbols.Enclosing
-	return h
 }
-func (h *hoverVisitor) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
+func (h *hoverVisitor) VisitIfStmt(s *ast.IfStmt) {
 	if helper.IsInRange(s.Condition.GetRange(), h.pos) {
-		return s.Condition.Accept(h)
+		s.Condition.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.Then.GetRange(), h.pos) {
-		return s.Then.Accept(h)
+		s.Then.Accept(h)
+		return
 	}
 	if s.Else != nil && helper.IsInRange(s.Else.GetRange(), h.pos) {
-		return s.Else.Accept(h)
+		s.Else.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
+func (h *hoverVisitor) VisitWhileStmt(s *ast.WhileStmt) {
 	if helper.IsInRange(s.Condition.GetRange(), h.pos) {
-		return s.Condition.Accept(h)
+		s.Condition.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), h.pos) {
-		return s.Body.Accept(h)
+		s.Body.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitForStmt(s *ast.ForStmt) ast.Visitor {
+func (h *hoverVisitor) VisitForStmt(s *ast.ForStmt) {
 	// TODO: fix h.currentSymbols
 	if helper.IsInRange(s.Initializer.GetRange(), h.pos) {
-		return s.Initializer.Accept(h)
+		s.Initializer.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.To.GetRange(), h.pos) {
-		return s.To.Accept(h)
+		s.To.Accept(h)
+		return
 	}
 	if s.StepSize != nil && helper.IsInRange(s.StepSize.GetRange(), h.pos) {
-		return s.StepSize.Accept(h)
+		s.StepSize.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), h.pos) {
-		return s.Body.Accept(h)
+		s.Body.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
+func (h *hoverVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) {
 	// TODO: fix h.currentSymbols
 	if helper.IsInRange(s.Initializer.GetRange(), h.pos) {
-		return s.Initializer.Accept(h)
+		s.Initializer.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.In.GetRange(), h.pos) {
-		return s.In.Accept(h)
+		s.In.Accept(h)
+		return
 	}
 	if helper.IsInRange(s.Body.GetRange(), h.pos) {
-		return s.Body.Accept(h)
+		s.Body.Accept(h)
+		return
 	}
-	return h
 }
-func (h *hoverVisitor) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(h)
-}
-func (h *hoverVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
+func (h *hoverVisitor) VisitReturnStmt(s *ast.ReturnStmt) {
 	if s.Value != nil && helper.IsInRange(s.Value.GetRange(), h.pos) {
-		return s.Value.Accept(h)
+		s.Value.Accept(h)
 	}
-	return h
 }
 
 // helper to get a nice-looking path to display in a hover

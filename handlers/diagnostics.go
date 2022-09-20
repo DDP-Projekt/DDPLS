@@ -47,9 +47,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 			return
 		}
 
-		for _, stmt := range currentAst.Statements {
-			stmt.Accept(visitor)
-		}
+		ast.VisitAst(currentAst, visitor)
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 			URI:         string(documents.Active),
@@ -76,7 +74,9 @@ var (
 	errSrc        = "ddp"
 )
 
-func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
+func (*diagnosticVisitor) VisitNode(ast.Node) {}
+
+func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
 		d.add(decl.Err, protocol.Diagnostic{
 			Range:    helper.ToProtocolRange(decl.GetRange()),
@@ -85,150 +85,20 @@ func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.Visitor {
 			Message:  decl.Err.Msg(),
 		})
 	}
-	return d
 }
-func (d *diagnosticVisitor) VisitVarDecl(decl *ast.VarDecl) ast.Visitor {
-	return decl.InitVal.Accept(d)
-}
-func (d *diagnosticVisitor) VisitFuncDecl(decl *ast.FuncDecl) ast.Visitor {
-	if decl.Body != nil {
-		decl.Body.Accept(d)
-	}
-	return d
-}
-
-func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.Visitor {
+func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) {
 	d.add(e.Err, protocol.Diagnostic{
 		Range:    helper.ToProtocolRange(e.GetRange()),
 		Severity: &severityError,
 		Source:   &errSrc,
 		Message:  e.Err.Msg(),
 	})
-	return d
 }
-func (d *diagnosticVisitor) VisitIdent(e *ast.Ident) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitIndexing(e *ast.Indexing) ast.Visitor {
-	e.Lhs.Accept(d)
-	return e.Index.Accept(d)
-}
-func (d *diagnosticVisitor) VisitIntLit(e *ast.IntLit) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitFloatLit(e *ast.FloatLit) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitBoolLit(e *ast.BoolLit) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitCharLit(e *ast.CharLit) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitStringLit(e *ast.StringLit) ast.Visitor {
-	return d
-}
-func (d *diagnosticVisitor) VisitListLit(e *ast.ListLit) ast.Visitor {
-	if e.Values != nil {
-		for _, expr := range e.Values {
-			expr.Accept(d)
-		}
-	} else if e.Count != nil && e.Value != nil {
-		e.Count.Accept(d)
-		e.Value.Accept(d)
-	}
-	return d
-}
-func (d *diagnosticVisitor) VisitUnaryExpr(e *ast.UnaryExpr) ast.Visitor {
-	return e.Rhs.Accept(d)
-}
-func (d *diagnosticVisitor) VisitBinaryExpr(e *ast.BinaryExpr) ast.Visitor {
-	e.Lhs.Accept(d)
-	return e.Rhs.Accept(d)
-}
-func (d *diagnosticVisitor) VisitTernaryExpr(e *ast.TernaryExpr) ast.Visitor {
-	e.Lhs.Accept(d)
-	e.Mid.Accept(d)
-	return e.Rhs.Accept(d)
-}
-func (d *diagnosticVisitor) VisitCastExpr(e *ast.CastExpr) ast.Visitor {
-	return e.Lhs.Accept(d)
-}
-func (d *diagnosticVisitor) VisitGrouping(e *ast.Grouping) ast.Visitor {
-	return e.Expr.Accept(d)
-}
-func (d *diagnosticVisitor) VisitFuncCall(e *ast.FuncCall) ast.Visitor {
-	for _, arg := range e.Args {
-		arg.Accept(d)
-	}
-	return d
-}
-
-func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) ast.Visitor {
+func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) {
 	d.add(s.Err, protocol.Diagnostic{
 		Range:    helper.ToProtocolRange(s.GetRange()),
 		Severity: &severityError,
 		Source:   &errSrc,
 		Message:  s.Err.Msg(),
 	})
-	return d
-}
-func (d *diagnosticVisitor) VisitDeclStmt(s *ast.DeclStmt) ast.Visitor {
-	return s.Decl.Accept(d)
-}
-func (d *diagnosticVisitor) VisitExprStmt(s *ast.ExprStmt) ast.Visitor {
-	return s.Expr.Accept(d)
-}
-func (d *diagnosticVisitor) VisitAssignStmt(s *ast.AssignStmt) ast.Visitor {
-	s.Var.Accept(d)
-	return s.Rhs.Accept(d)
-}
-func (d *diagnosticVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.Visitor {
-	for _, stmt := range s.Statements {
-		stmt.Accept(d)
-	}
-	return d
-}
-func (d *diagnosticVisitor) VisitIfStmt(s *ast.IfStmt) ast.Visitor {
-	s.Condition.Accept(d)
-	if s.Then != nil {
-		s.Then.Accept(d)
-	}
-	if s.Else != nil {
-		s.Else.Accept(d)
-	}
-	return d
-}
-func (d *diagnosticVisitor) VisitWhileStmt(s *ast.WhileStmt) ast.Visitor {
-	switch s.While.Type {
-	case token.SOLANGE:
-		s.Condition.Accept(d)
-		s.Body.Accept(d)
-	case token.MACHE, token.COUNT_MAL:
-		s.Body.Accept(d)
-		s.Condition.Accept(d)
-	}
-	return d
-}
-func (d *diagnosticVisitor) VisitForStmt(s *ast.ForStmt) ast.Visitor {
-	s.Initializer.Accept(d)
-	s.To.Accept(d)
-	if s.StepSize != nil {
-		s.StepSize.Accept(d)
-	}
-	return s.Body.Accept(d)
-}
-func (d *diagnosticVisitor) VisitForRangeStmt(s *ast.ForRangeStmt) ast.Visitor {
-	s.Initializer.Accept(d)
-	s.In.Accept(d)
-	return s.Body.Accept(d)
-}
-func (d *diagnosticVisitor) VisitFuncCallStmt(s *ast.FuncCallStmt) ast.Visitor {
-	return s.Call.Accept(d)
-}
-func (d *diagnosticVisitor) VisitReturnStmt(s *ast.ReturnStmt) ast.Visitor {
-	if s.Value == nil {
-		return d
-	}
-	return s.Value.Accept(d)
 }

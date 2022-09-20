@@ -18,7 +18,7 @@ func TextDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRan
 	}
 
 	visitor := &foldingVisitor{
-		foldRanges: nil,
+		foldRanges: make([]protocol.FoldingRange, 0),
 		currentAst: currentAst,
 	}
 

@@ -32,7 +32,7 @@ type foldingVisitor struct {
 	currentAst *ast.Ast
 }
 
-func (*foldingVisitor) VisitNode(ast.Node) {}
+func (*foldingVisitor) BaseVisitor() {}
 
 func (fold *foldingVisitor) VisitBlockStmt(s *ast.BlockStmt) {
 	if s.Token().File == fold.currentAst.File {

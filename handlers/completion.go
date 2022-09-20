@@ -124,6 +124,8 @@ type tableVisitor struct {
 	pos   protocol.Position
 }
 
+func (*tableVisitor) BaseVisitor() {}
+
 func (t *tableVisitor) VisitBadDecl(d *ast.BadDecl) {
 }
 func (t *tableVisitor) VisitVarDecl(d *ast.VarDecl) {

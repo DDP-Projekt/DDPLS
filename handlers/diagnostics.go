@@ -74,7 +74,7 @@ var (
 	errSrc        = "ddp"
 )
 
-func (*diagnosticVisitor) VisitNode(ast.Node) {}
+func (*diagnosticVisitor) BaseVisitor() {}
 
 func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported

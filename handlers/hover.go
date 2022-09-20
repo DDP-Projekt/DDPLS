@@ -52,6 +52,8 @@ type hoverVisitor struct {
 	file           string
 }
 
+func (*hoverVisitor) BaseVisitor() {}
+
 func (h *hoverVisitor) VisitBadDecl(d *ast.BadDecl) {
 
 }

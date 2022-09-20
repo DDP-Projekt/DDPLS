@@ -81,6 +81,8 @@ func (t *semanticTokenizer) getTokens() *protocol.SemanticTokens {
 	}
 }
 
+func (*semanticTokenizer) BaseVisitor() {}
+
 func (t *semanticTokenizer) add(tok highlightedToken) {
 	t.tokens = append(t.tokens, tok)
 }

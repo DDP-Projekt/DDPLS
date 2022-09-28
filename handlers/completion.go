@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"strings"
-
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/parse"
@@ -10,6 +8,9 @@ import (
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
@@ -20,6 +21,7 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		return nil, err
 	}
 
+	// Add all types
 	items := make([]protocol.CompletionItem, 0)
 	for _, s := range ddpTypes {
 		items = append(items, protocol.CompletionItem{
@@ -28,7 +30,22 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		})
 	}
 
+	// boolean to signify if the next keyword completion should have it's first character Capitalized
+	shouldCapitalize := false
+	// Get the current Document
+	if doc, ok := documents.Get(documents.Active); ok {
+		index := params.Position.IndexIn(doc.Content) // The index of the cursor
+		shouldCapitalize = decideCapitalization(index, doc.Content)
+	}
+
 	for _, s := range ddpKeywords {
+		// Capitalize the first character of the string if it's the start of a sentence
+		if shouldCapitalize {
+			runes := []rune(s)
+			runes[0] = unicode.ToUpper(runes[0])
+			s = string(runes)
+		}
+
 		items = append(items, protocol.CompletionItem{
 			Kind:  ptr(protocol.CompletionItemKindKeyword),
 			Label: s,
@@ -75,6 +92,39 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 	}
 
 	return items, nil
+}
+
+func decideCapitalization(index int, document string) bool {
+	if index-1 == 0 {
+		return true
+	}
+
+outer:
+	// loop backwards and switch on the character at that index
+	for i := index - 1; i >= 0; i-- {
+		switch r, _ := utf8.DecodeLastRuneInString(document[:i]); r {
+		case ' ', '\n', '\r', '\t':
+			continue // ignore whitespace
+		case ']': // ignore comments
+			for bracketCount := 1; i > 0 && bracketCount > 0; i-- {
+				if r, _ := utf8.DecodeLastRuneInString(document[:i-1]); r == '[' {
+					bracketCount--
+					// if comments is at the start of the file
+					if i-2 == 0 {
+						return true
+					}
+				} else if r == ']' {
+					bracketCount++
+				}
+			}
+		case '.', ':': // start of a new sentence
+			return true
+		default:
+			break outer
+		}
+	}
+
+	return false
 }
 
 func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {

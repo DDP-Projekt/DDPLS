@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -21,7 +22,10 @@ func TextDocumentSemanticTokensFull(context *glsp.Context, params *protocol.Sema
 		return nil, err
 	}
 
-	act, _ := documents.Get(documents.Active)
+	act, ok := documents.Get(documents.Active)
+	if !ok {
+		return nil, fmt.Errorf("%s not in document map", documents.Active)
+	}
 	path := act.Uri.Filepath()
 
 	tokenizer := &semanticTokenizer{

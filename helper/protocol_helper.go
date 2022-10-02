@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
+	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/pkg/token"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -27,7 +28,11 @@ func GetRangeLength(rang token.Range) int {
 	if rang.Start.Line == rang.End.Line {
 		return int(rang.End.Column - rang.Start.Column)
 	}
-	doc, _ := documents.Get(documents.Active)
+	doc, ok := documents.Get(documents.Active)
+	if !ok {
+		log.Warningf("Could not retrieve document %s", documents.Active)
+		return 0
+	}
 	lines := strings.Split(doc.Content, "\n")
 	length := len(lines[rang.Start.Line-1][rang.Start.Column-1:])
 	for i := rang.Start.Line; i < rang.End.Line-1; i++ {

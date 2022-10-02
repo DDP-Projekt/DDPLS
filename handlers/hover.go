@@ -24,7 +24,10 @@ func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	if currentAst, err = parse.WithoutHandler(); err != nil {
 		return nil, err
 	}
-	doc, _ := documents.Get(documents.Active)
+	doc, ok := documents.Get(documents.Active)
+	if !ok {
+		return nil, fmt.Errorf("%s not in document map", documents.Active)
+	}
 
 	hover := &hoverVisitor{
 		hover:          nil,

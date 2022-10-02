@@ -22,13 +22,18 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 	}
 	refreshing = true
 
+	activeDoc := documents.Active // save it if it changes during the delay
 	go func() {
 		if delay {
 			time.Sleep(500 * time.Millisecond)
 		}
 		refreshing = false
 
-		act, _ := documents.Get(documents.Active)
+		act, ok := documents.Get(activeDoc)
+		if !ok {
+			log.Warningf("Could not retrieve document %s", activeDoc)
+			return
+		}
 		path := act.Uri.Filepath()
 
 		visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
@@ -50,7 +55,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 		ast.VisitAst(currentAst, visitor)
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-			URI:         string(documents.Active),
+			URI:         string(activeDoc),
 			Diagnostics: visitor.diagnostics,
 		})
 	}()

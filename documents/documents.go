@@ -28,7 +28,11 @@ func Add(vscURI, content string) {
 
 func Get(docURI string) (*DocumentState, bool) {
 	doc, ok := documentStates.Load(docURI)
-	return doc.(*DocumentState), ok
+	if ok {
+		return doc.(*DocumentState), ok
+	} else {
+		return nil, ok
+	}
 }
 
 func Delete(docURI string) {

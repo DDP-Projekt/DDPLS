@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"errors"
+	"fmt"
+
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -17,7 +18,7 @@ func TextDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocu
 func TextDocumentDidChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	doc, ok := documents.Get(params.TextDocument.URI)
 	if !ok {
-		return errors.New("document sync error")
+		return fmt.Errorf("%s not in document map", params.TextDocument.URI)
 	}
 	for _, change := range params.ContentChanges {
 		switch change := change.(type) {

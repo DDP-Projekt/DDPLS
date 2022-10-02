@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
@@ -38,7 +38,7 @@ func parse(errHndl ddperror.Handler) (_ *ast.Ast, err error) {
 
 	activeDoc, ok := documents.Get(documents.Active)
 	if !ok {
-		return nil, errors.New("activeDocument not in document map")
+		return nil, fmt.Errorf("%s not in document map", documents.Active)
 	}
 
 	currentAst, err = parser.ParseSource(activeDoc.Path, []byte(activeDoc.Content), errHndl)

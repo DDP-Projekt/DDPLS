@@ -41,7 +41,13 @@ func parse(errHndl ddperror.Handler) (_ *ast.Ast, err error) {
 		return nil, fmt.Errorf("%s not in document map", documents.Active)
 	}
 
-	currentAst, err = parser.ParseSource(activeDoc.Path, []byte(activeDoc.Content), errHndl)
+	currentAst, err = parser.Parse(parser.Options{
+		FileName:     activeDoc.Path,
+		Source:       []byte(activeDoc.Content),
+		ErrorHandler: errHndl,
+		Tokens:       nil,
+	})
+
 	if err != nil {
 		return nil, err
 	}

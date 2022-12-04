@@ -42,6 +42,8 @@ func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	return hover.hover, nil
 }
 
+const commentCutset = " \r\n\t[]"
+
 type hoverVisitor struct {
 	hover          *protocol.Hover
 	pos            protocol.Position
@@ -62,18 +64,21 @@ func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
 
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
-		val := ""
-		if decl.Token().File == h.file {
-			val = fmt.Sprintf("[Z %d, S %d]: %s", decl.Name.Line(), decl.Name.Column(), decl.Type)
-		} else {
-			datei := h.getHoverFilePath(decl.Name.File)
-			val = fmt.Sprintf("[D %s, Z %d, S %d]: %s", datei, decl.Name.Line(), decl.Name.Column(), decl.Type)
+		header := ""
+		if decl.Token().File != h.file {
+			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Name.File))
+		}
+		comment := ""
+		if decl.Comment != nil {
+			comment = strings.Trim(decl.Comment.Literal, commentCutset) + "\n"
 		}
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
-			Contents: protocol.MarkedStringStruct{
-				Language: "ddp",
-				Value:    val,
+			Contents: protocol.MarkupContent{
+				Kind: protocol.MarkupKindMarkdown,
+				Value: fmt.Sprintf(
+					"%s%s```ddp\n%s\n```", header, comment, decl.Type,
+				),
 			},
 			Range: &pRange,
 		}
@@ -88,7 +93,6 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 		}
 	}
 	if fun, ok := h.currentSymbols.LookupFunc(e.Name); ok {
-		val := ""
 		var declRange protocol.Range
 
 		if fun.Body != nil {
@@ -97,45 +101,52 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 			declRange = helper.ToProtocolRange(fun.GetRange())
 		}
 
+		header := ""
+		body := ""
 		if file := fun.Token().File; file != h.file {
+			header = h.getHoverFilePath(file) + "\n"
+
 			content, err := os.ReadFile(file)
 			if err != nil {
 				log.Errorf("Unable to read %s: %s", file, err)
 			}
 			start, end := declRange.IndexesIn(string(content))
 
-			datei := h.getHoverFilePath(file)
-			val = fmt.Sprintf("[D %s, Z %d, S %d]\n%s", datei, fun.Token().Line(), fun.Token().Column(), content[start:end])
+			body = string(content[start:end])
 
 			if fun.Body != nil {
-				val += "\n..."
+				body += "\n..."
 				endRange := helper.ToProtocolRange(token.Range{
 					Start: fun.Body.Range.End,
 					End:   fun.GetRange().End,
 				})
 				start, end = endRange.IndexesIn(string(content))
-				val += string(content[start:end])
+				body += string(content[start:end])
 			}
 		} else {
 			start, end := declRange.IndexesIn(h.doc.Content)
-			val = fmt.Sprintf("[Z %d, S %d]\n%s", fun.Token().Line(), fun.Token().Column(), h.doc.Content[start:end])
+			body = h.doc.Content[start:end]
 
 			if fun.Body != nil {
-				val += "\n..."
+				body += "\n..."
 				endRange := helper.ToProtocolRange(token.Range{
 					Start: fun.Body.Range.End,
 					End:   fun.GetRange().End,
 				})
 				start, end = endRange.IndexesIn(h.doc.Content)
-				val += h.doc.Content[start:end]
+				body += h.doc.Content[start:end]
 			}
+		}
+		comment := ""
+		if fun.Comment != nil {
+			comment = strings.Trim(fun.Comment.Literal, commentCutset) + "\n"
 		}
 
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
-			Contents: protocol.MarkedStringStruct{
-				Language: "ddp",
-				Value:    val,
+			Contents: protocol.MarkupContent{
+				Kind:  protocol.MarkupKindMarkdown,
+				Value: fmt.Sprintf("%s\n%s```ddp\n%s\n```", header, comment, body),
 			},
 			Range: &pRange,
 		}

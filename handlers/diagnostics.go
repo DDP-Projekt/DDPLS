@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -41,12 +42,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, delay bool) {
 		var currentAst *ast.Ast
 		var err error
 		if currentAst, err = parse.WithErrorHandler(func(err ddperror.Error) {
-			visitor.add(err, protocol.Diagnostic{
-				Range:    helper.ToProtocolRange(err.GetRange()),
-				Severity: &severityError,
-				Source:   &errSrc,
-				Message:  err.Msg(),
-			})
+			visitor.add(err)
 		}); err != nil {
 			log.Errorf("parser error: %s", err)
 			return
@@ -66,10 +62,16 @@ type diagnosticVisitor struct {
 	diagnostics []protocol.Diagnostic
 }
 
-func (d *diagnosticVisitor) add(err ddperror.Error, diagnostic protocol.Diagnostic) {
-	if err.File() != d.path {
+func (d *diagnosticVisitor) add(err ddperror.Error) {
+	diagnostic := protocol.Diagnostic{
+		Range:    helper.ToProtocolRange(err.Range),
+		Severity: &severityError,
+		Source:   &errSrc,
+		Message:  fmt.Sprintf("%s (%d)", err.Msg, err.Code),
+	}
+	if err.File != d.path {
 		diagnostic.Range = protocol.Range{Start: protocol.Position{Line: 0, Character: 0}, End: protocol.Position{Line: 0, Character: 1}}
-		diagnostic.Message = err.File() + ": " + diagnostic.Message
+		diagnostic.Message = err.File + ": " + diagnostic.Message
 	}
 	d.diagnostics = append(d.diagnostics, diagnostic)
 }
@@ -83,27 +85,12 @@ func (*diagnosticVisitor) BaseVisitor() {}
 
 func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
-		d.add(decl.Err, protocol.Diagnostic{
-			Range:    helper.ToProtocolRange(decl.GetRange()),
-			Severity: &severityError,
-			Source:   &errSrc,
-			Message:  decl.Err.Msg(),
-		})
+		d.add(decl.Err)
 	}
 }
 func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) {
-	d.add(e.Err, protocol.Diagnostic{
-		Range:    helper.ToProtocolRange(e.GetRange()),
-		Severity: &severityError,
-		Source:   &errSrc,
-		Message:  e.Err.Msg(),
-	})
+	d.add(e.Err)
 }
 func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) {
-	d.add(s.Err, protocol.Diagnostic{
-		Range:    helper.ToProtocolRange(s.GetRange()),
-		Severity: &severityError,
-		Source:   &errSrc,
-		Message:  s.Err.Msg(),
-	})
+	d.add(s.Err)
 }

@@ -15,10 +15,9 @@ import (
 )
 
 func TextDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error
-	if currentAst, err = parse.WithoutHandler(); err != nil {
+	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
 		return nil, err
 	}
 

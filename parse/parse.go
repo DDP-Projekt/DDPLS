@@ -15,12 +15,24 @@ var (
 	// the resulting Ast of the activeDocument
 	// should be copied on start of use to make sure
 	// it doesn't change while being used
-	currentAst *ast.Ast
-	parseMutex = sync.Mutex{}
+	currentAst   *ast.Ast
+	currentError error // error result of the latest invocation of parse
+	parseMutex   = sync.Mutex{}
 )
 
-func Ast() *ast.Ast {
-	return currentAst
+func Ast() (*ast.Ast, error) {
+	parseMutex.Lock()
+	defer parseMutex.Unlock()
+	return currentAst, currentError
+}
+
+// reparses only if documents.Active != docURI
+func ReparseIfNotActive(docURI string) (*ast.Ast, error) {
+	if docURI != documents.Active {
+		documents.Active = docURI
+		return parse(ddperror.EmptyHandler)
+	}
+	return Ast()
 }
 
 func WithErrorHandler(errHndl ddperror.Handler) (*ast.Ast, error) {
@@ -32,7 +44,7 @@ func WithoutHandler() (*ast.Ast, error) {
 }
 
 // concurrency-safe re-parsing of currentAst
-func parse(errHndl ddperror.Handler) (_ *ast.Ast, err error) {
+func parse(errHndl ddperror.Handler) (*ast.Ast, error) {
 	parseMutex.Lock()
 	defer parseMutex.Unlock()
 
@@ -41,15 +53,12 @@ func parse(errHndl ddperror.Handler) (_ *ast.Ast, err error) {
 		return nil, fmt.Errorf("%s not in document map", documents.Active)
 	}
 
-	currentAst, err = parser.Parse(parser.Options{
+	currentAst, currentError = parser.Parse(parser.Options{
 		FileName:     activeDoc.Path,
 		Source:       []byte(activeDoc.Content),
 		ErrorHandler: errHndl,
 		Tokens:       nil,
 	})
 
-	if err != nil {
-		return nil, err
-	}
-	return currentAst, nil
+	return currentAst, currentError
 }

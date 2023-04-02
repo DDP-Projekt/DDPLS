@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/parse"
 	"github.com/DDP-Projekt/DDPLS/uri"
@@ -11,10 +10,9 @@ import (
 )
 
 func TextDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
-	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error
-	if currentAst, err = parse.WithoutHandler(); err != nil {
+	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
 		return nil, err
 	}
 

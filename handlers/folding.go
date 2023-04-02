@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/parse"
 	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
@@ -10,10 +9,9 @@ import (
 )
 
 func TextDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
-	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error
-	if currentAst, err = parse.WithoutHandler(); err != nil {
+	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
 		return nil, err
 	}
 

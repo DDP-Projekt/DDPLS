@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
+	"github.com/DDP-Projekt/DDPLS/log"
+	"github.com/DDP-Projekt/DDPLS/parse"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -11,6 +13,9 @@ import (
 func TextDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	documents.Add(params.TextDocument.URI, params.TextDocument.Text)
 	documents.Active = params.TextDocument.URI
+	if _, err := parse.WithoutHandler(); err != nil {
+		log.Warningf("Error while parsing new document %s: %s", documents.Active, err)
+	}
 	sendDiagnostics(context.Notify, false)
 	return nil
 }
@@ -30,6 +35,9 @@ func TextDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 		}
 	}
 	documents.Active = params.TextDocument.URI
+	if _, err := parse.WithoutHandler(); err != nil {
+		log.Warningf("Error while parsing changed document %s: %s", documents.Active, err)
+	}
 	sendDiagnostics(context.Notify, true)
 	return nil
 }

@@ -18,10 +18,9 @@ import (
 )
 
 func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	documents.Active = params.TextDocument.URI
 	var currentAst *ast.Ast
 	var err error
-	if currentAst, err = parse.WithoutHandler(); err != nil {
+	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
 		return nil, err
 	}
 	doc, ok := documents.Get(documents.Active)

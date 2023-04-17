@@ -5,18 +5,17 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/log"
-	"github.com/DDP-Projekt/DDPLS/parse"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentDidOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	documents.Add(params.TextDocument.URI, params.TextDocument.Text)
-	documents.Active = params.TextDocument.URI
-	if _, err := parse.WithoutHandler(); err != nil {
-		log.Warningf("Error while parsing new document %s: %s", documents.Active, err)
+	err := documents.AddAndParse(params.TextDocument.URI, params.TextDocument.Text)
+	if err != nil {
+		return fmt.Errorf("error while parsing module %s: %s", params.TextDocument.URI, err)
 	}
-	sendDiagnostics(context.Notify, false)
+	sendDiagnostics(context.Notify, params.TextDocument.URI, false)
 	return nil
 }
 
@@ -34,11 +33,10 @@ func TextDocumentDidChange(context *glsp.Context, params *protocol.DidChangeText
 			doc.Content = change.Text
 		}
 	}
-	documents.Active = params.TextDocument.URI
-	if _, err := parse.WithoutHandler(); err != nil {
-		log.Warningf("Error while parsing changed document %s: %s", documents.Active, err)
+	if err := doc.ReParse(ddperror.EmptyHandler); err != nil {
+		log.Warningf("Error while parsing changed document %s: %s", doc.Path, err)
 	}
-	sendDiagnostics(context.Notify, true)
+	sendDiagnostics(context.Notify, string(doc.Uri), true)
 	return nil
 }
 

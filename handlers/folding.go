@@ -1,44 +1,43 @@
 package handlers
 
 import (
+	"fmt"
+
+	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
-	"github.com/DDP-Projekt/DDPLS/parse"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
-	var currentAst *ast.Ast
-	var err error
-	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
-		return nil, err
+	doc, ok := documents.Get(params.TextDocument.URI)
+	if !ok {
+		return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
 	}
 
 	visitor := &foldingVisitor{
 		foldRanges: make([]protocol.FoldingRange, 0),
-		currentAst: currentAst,
+		module:     doc.Module,
 	}
 
-	ast.VisitAst(currentAst, visitor)
+	ast.VisitAst(doc.Module.Ast, visitor)
 
 	return visitor.foldRanges, nil
 }
 
 type foldingVisitor struct {
 	foldRanges []protocol.FoldingRange
-	currentAst *ast.Ast
+	module     *ast.Module
 }
 
 func (*foldingVisitor) BaseVisitor() {}
 
 func (fold *foldingVisitor) VisitBlockStmt(s *ast.BlockStmt) {
-	if s.Token().File == fold.currentAst.File {
-		foldRange := protocol.FoldingRange{
-			StartLine: helper.ToProtocolRange(s.GetRange()).Start.Line,
-			EndLine:   helper.ToProtocolRange(s.GetRange()).End.Line,
-		}
-
-		fold.foldRanges = append(fold.foldRanges, foldRange)
+	foldRange := protocol.FoldingRange{
+		StartLine: helper.ToProtocolRange(s.GetRange()).Start.Line,
+		EndLine:   helper.ToProtocolRange(s.GetRange()).End.Line,
 	}
+
+	fold.foldRanges = append(fold.foldRanges, foldRange)
 }

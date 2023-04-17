@@ -1,52 +1,41 @@
 package handlers
 
 import (
+	"fmt"
+
+	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
-	"github.com/DDP-Projekt/DDPLS/parse"
 	"github.com/DDP-Projekt/DDPLS/uri"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
-	var currentAst *ast.Ast
-	var err error
-	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
-		return nil, err
+	doc, ok := documents.Get(params.TextDocument.URI)
+	if !ok {
+		return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
 	}
 
 	definition := &definitionVisitor{
-		location:       nil,
-		currentSymbols: nil,
-		currentAst:     currentAst,
-		pos:            params.Position,
+		location: nil,
+		pos:      params.Position,
 	}
 
-	ast.VisitAst(currentAst, definition)
+	ast.VisitModuleRec(doc.Module, definition)
 
 	return definition.location, nil
 }
 
 type definitionVisitor struct {
-	location       *protocol.Location
-	currentSymbols *ast.SymbolTable
-	currentAst     *ast.Ast
-	pos            protocol.Position
+	location *protocol.Location
+	pos      protocol.Position
 }
 
 func (*definitionVisitor) BaseVisitor() {}
 
-func (def *definitionVisitor) ShouldVisit(node ast.Node) bool {
-	return node.Token().File == def.currentAst.File && helper.IsInRange(node.GetRange(), def.pos)
-}
-
-func (def *definitionVisitor) UpdateScope(symbols *ast.SymbolTable) {
-	def.currentSymbols = symbols
-}
-
 func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
-	if decl, ok := def.currentSymbols.LookupVar(e.Literal.Literal); ok {
+	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		def.location = &protocol.Location{
 			URI:   string(uri.FromPath(decl.Token().File)),
 			Range: helper.ToProtocolRange(decl.GetRange()),
@@ -54,7 +43,7 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 	}
 }
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) {
-	if fun, ok := def.currentSymbols.LookupFunc(e.Name); ok {
+	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
 			URI:   string(uri.FromPath(fun.Token().File)),
 			Range: helper.ToProtocolRange(fun.GetRange()),

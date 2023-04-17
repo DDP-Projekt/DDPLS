@@ -10,7 +10,7 @@ import (
 	"unicode"
 
 	"github.com/DDP-Projekt/DDPLS/log"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 )
 
 const fileScheme = "file"
@@ -152,7 +152,7 @@ func FromPath(path string) URI {
 	const prefix = "Duden"
 	if len(path) >= len(prefix) && strings.EqualFold(prefix, path[:len(prefix)]) {
 		suffix := path[len(prefix):]
-		path = scanner.DDPPATH + suffix
+		path = ddppath.InstallDir + suffix
 	}
 	if !isWindowsDrivePath(path) {
 		if abs, err := filepath.Abs(path); err == nil {

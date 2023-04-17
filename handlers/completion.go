@@ -7,20 +7,13 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
-	"github.com/DDP-Projekt/DDPLS/parse"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
-	var currentAst *ast.Ast
-	var err error
-	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
-		return nil, err
-	}
-
 	// Add all types
 	items := make([]protocol.CompletionItem, 0)
 	for _, s := range ddpTypes {
@@ -32,10 +25,12 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 
 	// boolean to signify if the next keyword completion should have it's first character Capitalized
 	shouldCapitalize := false
+	var doc *documents.DocumentState
 	// Get the current Document
-	if doc, ok := documents.Get(documents.Active); ok {
-		index := params.Position.IndexIn(doc.Content) // The index of the cursor
-		shouldCapitalize = decideCapitalization(index, doc.Content)
+	if d, ok := documents.Get(params.TextDocument.URI); ok {
+		index := params.Position.IndexIn(d.Content) // The index of the cursor
+		shouldCapitalize = decideCapitalization(index, d.Content)
+		doc = d
 	}
 
 	for _, s := range ddpKeywords {
@@ -52,10 +47,12 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		})
 	}
 
+	currentAst := doc.Module.Ast
+
 	visitor := &tableVisitor{
 		Table: currentAst.Symbols,
 		pos:   params.Position,
-		file:  currentAst.File,
+		file:  doc.Module.FileName,
 	}
 
 	aliases := make([]ast.FuncAlias, 0)
@@ -66,13 +63,16 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 			}
 		}
 	}
-	ast.VisitAst(currentAst, visitor)
+	ast.VisitAst(doc.Module.Ast, visitor)
 
 	table := visitor.Table
 	varItems := make(map[string]protocol.CompletionItem)
 	for table != nil {
-		for name := range table.Variables {
+		for name := range table.Declarations {
 			if _, ok := varItems[name]; !ok {
+				if _, ok, isVar := table.LookupDecl(name); ok && !isVar {
+					continue
+				}
 				varItems[name] = protocol.CompletionItem{
 					Kind:  ptr(protocol.CompletionItemKindVariable),
 					Label: name,
@@ -131,7 +131,7 @@ func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
 	insertText := strings.TrimPrefix(strings.TrimSuffix(alias.Original.Literal, "\""), "\"") // remove the ""
 	return protocol.CompletionItem{
 		Kind:       ptr(protocol.CompletionItemKindFunction),
-		Label:      alias.Func,
+		Label:      alias.Func.Name(),
 		InsertText: &insertText,
 		Detail:     &insertText,
 		FilterText: &insertText,
@@ -180,5 +180,5 @@ func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
 }
 
 func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
-	return node.Token().File == t.file && helper.IsInRange(node.GetRange(), t.pos)
+	return helper.IsInRange(node.GetRange(), t.pos)
 }

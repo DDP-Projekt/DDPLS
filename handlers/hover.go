@@ -9,34 +9,28 @@ import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/log"
-	"github.com/DDP-Projekt/DDPLS/parse"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/scanner"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	var currentAst *ast.Ast
-	var err error
-	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
-		return nil, err
-	}
-	doc, ok := documents.Get(documents.Active)
+	doc, ok := documents.Get(params.TextDocument.URI)
 	if !ok {
-		return nil, fmt.Errorf("%s not in document map", documents.Active)
+		return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
 	}
 
 	hover := &hoverVisitor{
 		hover:          nil,
 		pos:            params.Position,
-		currentSymbols: currentAst.Symbols,
+		currentSymbols: doc.Module.Ast.Symbols,
 		doc:            doc,
-		file:           currentAst.File,
+		file:           doc.Module.FileName,
 	}
 
-	ast.VisitAst(currentAst, hover)
+	ast.VisitAst(doc.Module.Ast, hover)
 
 	return hover.hover, nil
 }
@@ -62,10 +56,10 @@ func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
 }
 
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
-	if decl, ok := h.currentSymbols.LookupVar(e.Literal.Literal); ok {
+	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		header := ""
 		if decl.Token().File != h.file {
-			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Name.File))
+			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Token().File))
 		}
 		comment := ""
 		if decl.Comment != nil {
@@ -91,7 +85,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 			}
 		}
 	}
-	if fun, ok := h.currentSymbols.LookupFunc(e.Name); ok {
+	if fun, ok := e.Func, e.Func != nil; ok {
 		var declRange protocol.Range
 
 		if fun.Body != nil {
@@ -160,7 +154,7 @@ func (h *hoverVisitor) getHoverFilePath(file string) string {
 	} else {
 		datei = filepath.ToSlash(strings.TrimPrefix(datei, ".."+string(filepath.Separator)))
 	}
-	if strings.HasPrefix(file, filepath.Join(scanner.DDPPATH, "Duden")) {
+	if strings.HasPrefix(file, ddppath.Duden) {
 		datei = "Duden/" + filepath.Base(file)
 	}
 	return datei

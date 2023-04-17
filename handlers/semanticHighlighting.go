@@ -6,35 +6,30 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
-	"github.com/DDP-Projekt/DDPLS/parse"
-	"github.com/DDP-Projekt/Kompilierer/pkg/ast"
-	"github.com/DDP-Projekt/Kompilierer/pkg/token"
+	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
 func TextDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	var currentAst *ast.Ast
-	var err error
-	if currentAst, err = parse.ReparseIfNotActive(params.TextDocument.URI); err != nil {
-		return nil, err
-	}
-
-	act, ok := documents.Get(documents.Active)
+	act, ok := documents.Get(params.TextDocument.URI)
 	if !ok {
-		return nil, fmt.Errorf("%s not in document map", documents.Active)
+		return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
 	}
-	path := act.Uri.Filepath()
+	path := act.Path
 
 	tokenizer := &semanticTokenizer{
 		tokens: make([]highlightedToken, 0),
 		file:   path,
+		doc:    act,
 	}
 
-	ast.VisitAst(currentAst, tokenizer)
+	ast.VisitAst(act.Module.Ast, tokenizer)
 
-	return tokenizer.getTokens(), nil
+	tokens := tokenizer.getTokens()
+	return tokens, nil
 }
 
 type highlightedToken struct {
@@ -68,6 +63,7 @@ func (t *highlightedToken) serialize(previous highlightedToken) []protocol.UInte
 type semanticTokenizer struct {
 	file   string
 	tokens []highlightedToken
+	doc    *documents.DocumentState
 }
 
 func (t *semanticTokenizer) getTokens() *protocol.SemanticTokens {
@@ -95,29 +91,29 @@ func (t *semanticTokenizer) add(tok highlightedToken) {
 }
 
 func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) {
-	t.add(newHightlightedToken(token.NewRange(d.Name, d.Name), protocol.SemanticTokenTypeVariable, nil))
+	t.add(newHightlightedToken(token.NewRange(d.NameTok, d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 }
 func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
-	t.add(newHightlightedToken(token.NewRange(d.Name, d.Name), protocol.SemanticTokenTypeVariable, nil))
+	t.add(newHightlightedToken(token.NewRange(d.NameTok, d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	for _, param := range d.ParamNames {
-		t.add(newHightlightedToken(token.NewRange(param, param), protocol.SemanticTokenTypeParameter, nil))
+		t.add(newHightlightedToken(token.NewRange(param, param), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
 }
 
 func (t *semanticTokenizer) VisitIdent(e *ast.Ident) {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeVariable, nil))
+	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeVariable, nil))
 }
 func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
+	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
 }
 func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeNumber, nil))
+	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
 }
 func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
+	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 }
 func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) {
-	t.add(newHightlightedToken(e.GetRange(), protocol.SemanticTokenTypeString, nil))
+	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 }
 
 func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
@@ -141,29 +137,33 @@ func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
 		for i, arg := range args {
 			argRange := arg.GetRange()
 			cutRange := helper.CutRangeOut(rang, argRange)
-			if helper.GetRangeLength(cutRange[0]) != 0 {
-				t.add(newHightlightedToken(cutRange[0], protocol.SemanticTokenTypeFunction, nil))
+			if helper.GetRangeLength(cutRange[0], t.doc) != 0 {
+				t.add(newHightlightedToken(cutRange[0], t.doc, protocol.SemanticTokenTypeFunction, nil))
 			}
 			ast.VisitNode(t, arg, nil)
 			rang = token.Range{Start: cutRange[1].Start, End: rang.End}
 
-			if i == len(e.Args)-1 && helper.GetRangeLength(cutRange[1]) != 0 {
-				t.add(newHightlightedToken(cutRange[1], protocol.SemanticTokenTypeFunction, nil))
+			if i == len(e.Args)-1 && helper.GetRangeLength(cutRange[1], t.doc) != 0 {
+				t.add(newHightlightedToken(cutRange[1], t.doc, protocol.SemanticTokenTypeFunction, nil))
 			}
 		}
 	} else {
-		t.add(newHightlightedToken(rang, protocol.SemanticTokenTypeFunction, nil))
+		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
 	}
 }
 
-func newHightlightedToken(rang token.Range, tokType protocol.SemanticTokenType, modifiers []protocol.SemanticTokenModifier) highlightedToken {
+func (t *semanticTokenizer) VisitImportStmt(e *ast.ImportStmt) {
+	t.add(newHightlightedToken(e.FileName.Range, t.doc, protocol.SemanticTokenTypeString, nil))
+}
+
+func newHightlightedToken(rang token.Range, doc *documents.DocumentState, tokType protocol.SemanticTokenType, modifiers []protocol.SemanticTokenModifier) highlightedToken {
 	if modifiers == nil {
 		modifiers = make([]protocol.SemanticTokenModifier, 0)
 	}
 	return highlightedToken{
 		line:      int(rang.Start.Line),
 		column:    int(rang.Start.Column),
-		length:    helper.GetRangeLength(rang),
+		length:    helper.GetRangeLength(rang, doc),
 		tokenType: tokType,
 		modifiers: modifiers,
 	}

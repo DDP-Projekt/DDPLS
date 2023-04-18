@@ -22,7 +22,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, docURI string, delay bool) {
 	}
 	refreshing = true
 
-	go func() {
+	go func(docURI string) {
 		if delay {
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -50,7 +50,7 @@ func sendDiagnostics(notify glsp.NotifyFunc, docURI string, delay bool) {
 			URI:         docURI,
 			Diagnostics: visitor.diagnostics,
 		})
-	}()
+	}(docURI)
 }
 
 type diagnosticVisitor struct {

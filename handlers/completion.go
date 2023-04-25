@@ -63,7 +63,26 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 			}
 		}
 	}
-	ast.VisitAst(doc.Module.Ast, visitor)
+	ast.VisitAst(currentAst, visitor)
+
+	ast.VisitAst(currentAst, importVisitor(func(imprt *ast.ImportStmt) {
+		contains_name := func(name string) bool {
+			for i := range imprt.ImportedSymbols {
+				if imprt.ImportedSymbols[i].Literal == name {
+					return true
+				}
+			}
+			return false
+		}
+
+		is_full_import := len(imprt.ImportedSymbols) == 0
+
+		for name, decl := range imprt.Module.PublicDecls {
+			if funDecl, ok := decl.(*ast.FuncDecl); ok && (is_full_import || contains_name(name)) {
+				aliases = append(aliases, funDecl.Aliases...)
+			}
+		}
+	}))
 
 	table := visitor.Table
 	varItems := make(map[string]protocol.CompletionItem)
@@ -181,4 +200,12 @@ func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
 
 func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), t.pos)
+}
+
+type importVisitor func(imprt *ast.ImportStmt)
+
+func (importVisitor) BaseVisitor() {}
+
+func (f importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
+	f(imprt)
 }

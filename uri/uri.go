@@ -1,3 +1,5 @@
+// copied from gopls
+// the Go language server
 package uri
 
 import (

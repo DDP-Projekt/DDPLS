@@ -16,41 +16,41 @@ import (
 
 var refreshing = false
 
-func sendDiagnostics(notify glsp.NotifyFunc, docURI string, delay bool) {
+func sendDiagnostics(notify glsp.NotifyFunc, vscURI string, delay bool) {
 	if refreshing {
 		return
 	}
 	refreshing = true
 
-	go func(docURI string) {
+	go func(vscURI string) {
 		if delay {
 			time.Sleep(500 * time.Millisecond)
 		}
 		refreshing = false
 
-		act, ok := documents.Get(docURI)
+		doc, ok := documents.Get(vscURI)
 		if !ok {
-			log.Warningf("Could not retrieve document %s", docURI)
+			log.Warningf("Could not retrieve document %s", vscURI)
 			return
 		}
-		path := act.Uri.Filepath()
+		path := doc.Uri.Filepath()
 
 		visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
 
-		if err := act.ReParse(func(err ddperror.Error) {
+		if err := doc.ReParse(func(err ddperror.Error) {
 			visitor.add(err)
 		}); err != nil {
 			log.Errorf("parser error: %s", err)
 			return
 		}
 
-		ast.VisitModuleRec(act.Module, visitor)
+		ast.VisitModuleRec(doc.Module, visitor)
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-			URI:         docURI,
+			URI:         vscURI,
 			Diagnostics: visitor.diagnostics,
 		})
-	}(docURI)
+	}(vscURI)
 }
 
 type diagnosticVisitor struct {

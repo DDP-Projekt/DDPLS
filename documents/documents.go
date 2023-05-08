@@ -54,12 +54,12 @@ func AddAndParse(vscURI, content string) error {
 		Content: content,
 		Path:    docURI.Filepath(),
 	}
-	documentStates.Store(vscURI, docState)
+	documentStates.Store(docURI, docState)
 	return docState.ReParse(ddperror.EmptyHandler)
 }
 
-func Get(docURI string) (*DocumentState, bool) {
-	doc, ok := documentStates.Load(docURI)
+func Get(vscURI string) (*DocumentState, bool) {
+	doc, ok := documentStates.Load(uri.FromURI(vscURI))
 	if ok {
 		return doc.(*DocumentState), ok
 	} else {
@@ -67,6 +67,6 @@ func Get(docURI string) (*DocumentState, bool) {
 	}
 }
 
-func Delete(docURI string) {
-	documentStates.Delete(docURI)
+func Delete(vscURI string) {
+	documentStates.Delete(uri.FromURI(vscURI))
 }

@@ -82,10 +82,6 @@ func (t *semanticTokenizer) getTokens() *protocol.SemanticTokens {
 
 func (*semanticTokenizer) BaseVisitor() {}
 
-func (t *semanticTokenizer) ShouldVisit(node ast.Node) bool {
-	return node.Token().File == t.file
-}
-
 func (t *semanticTokenizer) add(tok highlightedToken) {
 	t.tokens = append(t.tokens, tok)
 }

@@ -47,19 +47,19 @@ type hoverVisitor struct {
 
 func (*hoverVisitor) BaseVisitor() {}
 
-func (h *hoverVisitor) UpdateScope(symbols *ast.SymbolTable) {
-	h.currentSymbols = symbols
+func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
+	return helper.IsInRange(node.GetRange(), h.pos)
 }
 
-func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
-	return node.Token().File == h.file && helper.IsInRange(node.GetRange(), h.pos)
+func (h *hoverVisitor) UpdateScope(symbols *ast.SymbolTable) {
+	h.currentSymbols = symbols
 }
 
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		header := ""
-		if decl.Token().File != h.file {
-			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Token().File))
+		if decl.Mod.FileName != h.file {
+			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Mod.FileName))
 		}
 		comment := ""
 		if decl.Comment != nil {
@@ -96,7 +96,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 
 		header := ""
 		body := ""
-		if file := fun.Token().File; file != h.file {
+		if file := fun.Mod.FileName; file != h.file {
 			header = h.getHoverFilePath(file) + "\n"
 
 			content, err := os.ReadFile(file)

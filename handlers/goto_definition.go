@@ -34,10 +34,14 @@ type definitionVisitor struct {
 
 func (*definitionVisitor) BaseVisitor() {}
 
+func (def *definitionVisitor) ShouldVisit(node ast.Node) bool {
+	return helper.IsInRange(node.GetRange(), def.pos)
+}
+
 func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		def.location = &protocol.Location{
-			URI:   string(uri.FromPath(decl.Token().File)),
+			URI:   string(uri.FromPath(decl.Mod.FileName)),
 			Range: helper.ToProtocolRange(decl.GetRange()),
 		}
 	}
@@ -45,7 +49,7 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) {
 	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
-			URI:   string(uri.FromPath(fun.Token().File)),
+			URI:   string(uri.FromPath(fun.Mod.FileName)),
 			Range: helper.ToProtocolRange(fun.GetRange()),
 		}
 	}

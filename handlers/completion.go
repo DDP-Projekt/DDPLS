@@ -66,6 +66,10 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 	ast.VisitAst(currentAst, visitor)
 
 	ast.VisitAst(currentAst, importVisitor(func(imprt *ast.ImportStmt) {
+		if imprt == nil || imprt.Module == nil {
+			return
+		}
+
 		contains_name := func(name string) bool {
 			for i := range imprt.ImportedSymbols {
 				if imprt.ImportedSymbols[i].Literal == name {

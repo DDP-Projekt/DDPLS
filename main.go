@@ -51,6 +51,12 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 			Full: true,
 		},
 	}
+	capabilities.CompletionProvider = &protocol.CompletionOptions{
+		TriggerCharacters: []string{
+			"\"",
+			"/",
+		},
+	}
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
 		ServerInfo: &protocol.InitializeResultServerInfo{

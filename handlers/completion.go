@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 
@@ -8,6 +12,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -84,6 +89,18 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		items = append(items, aliasToCompletionItem(alias))
 	}
 
+	// must be here at the end because it might clear previous items
+	triggerChar := (*string)(nil)
+	if params.Context != nil {
+		triggerChar = params.Context.TriggerCharacter
+	}
+	ast.VisitAst(currentAst, &importVisitor{
+		pos:         params.Position,
+		items:       &items,
+		modPath:     doc.Module.FileName,
+		triggerChar: triggerChar,
+	})
+
 	return items, nil
 }
 
@@ -135,27 +152,50 @@ func ptr[T any](v T) *T {
 	return &v
 }
 
-var ddpTypes = []string{
-	"Zahl",
-	"Kommazahl",
-	"Boolean",
-	"Text",
-	"Buchstabe",
-	"Zahlen Liste",
-	"Kommazahlen Liste",
-	"Boolean Liste",
-	"Text Liste",
-	"Buchstaben Liste",
-}
+var (
+	ddpTypes = []string{
+		"Zahl",
+		"Kommazahl",
+		"Boolean",
+		"Text",
+		"Buchstabe",
+		"Zahlen Liste",
+		"Kommazahlen Liste",
+		"Boolean Liste",
+		"Text Liste",
+		"Buchstaben Liste",
+	}
+	ddpKeywords = make([]string, 0, len(token.KeywordMap))
+	dudenPaths  = make([]string, 0)
+)
 
-var ddpKeywords []string
+func getRelevantEntryName(entry fs.DirEntry) string {
+	name := entry.Name()
+	if !entry.IsDir() && !strings.HasSuffix(name, ".ddp") {
+		return ""
+	}
+	name = strings.TrimSuffix(name, ".ddp")
+	if entry.IsDir() {
+		name = name + "/"
+	}
+	return name
+}
 
 // initialize the ddp-keywords
 func init() {
-	ddpKeywords = make([]string, 0, len(token.KeywordMap))
 	for k := range token.KeywordMap {
 		if !helper.Contains(ddpTypes, k) {
 			ddpKeywords = append(ddpKeywords, k)
+		}
+	}
+	dudenEntries, err := os.ReadDir(ddppath.Duden)
+	if err != nil {
+		log.Warningf("Unable to read Duden-Dir: %s", err)
+		return
+	}
+	for _, entry := range dudenEntries {
+		if name := getRelevantEntryName(entry); name != "" {
+			dudenPaths = append(dudenPaths, "Duden/"+name)
 		}
 	}
 }
@@ -178,9 +218,79 @@ func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
 	}
 
 	t.Table = symbols
-	log.Infof("updating scope: %v\n", symbols)
 }
 
 func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), t.pos)
+}
+
+type importVisitor struct {
+	pos         protocol.Position
+	items       *[]protocol.CompletionItem
+	modPath     string
+	triggerChar *string
+}
+
+func (*importVisitor) BaseVisitor() {}
+
+func (vis *importVisitor) ShouldVisit(node ast.Node) bool {
+	return helper.IsInRange(node.GetRange(), vis.pos)
+}
+
+func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
+	if helper.IsInRange(imprt.FileName.Range, protocol.Position(vis.pos)) {
+		// clear the items, because we want no keywords and variables if we
+		// are in an import path
+		*vis.items = make([]protocol.CompletionItem, 0, len(dudenPaths))
+
+		incompletePath := filepath.Dir(ast.TrimStringLit(imprt.FileName))
+
+		if incompletePath == "." {
+			addDudenPaths(vis.items)
+		}
+
+		searchPath := filepath.Join(filepath.Dir(vis.modPath), incompletePath)
+		if vis.triggerChar != nil && *vis.triggerChar == "/" && incompletePath == "Duden" {
+			searchPath = ddppath.Duden
+		}
+
+		entries, err := os.ReadDir(searchPath)
+		if err != nil {
+			log.Warningf("unable to read incomplete import Path dir: %s", err)
+			return
+		}
+
+		modFile := filepath.Base(vis.modPath)
+		for _, entry := range entries {
+			if !entry.IsDir() && entry.Name() == modFile {
+				continue
+			}
+
+			if path := getRelevantEntryName(entry); path != "" {
+				if vis.triggerChar != nil && *vis.triggerChar != "/" {
+					path = incompletePath + "/" + path
+				}
+				finalPath := strings.TrimPrefix(path, "./")
+				*vis.items = append(*vis.items, pathToCompletionItem(finalPath))
+			}
+		}
+	}
+}
+
+func pathToCompletionItem(path string) protocol.CompletionItem {
+	kind := ptr(protocol.CompletionItemKindFile)
+	if strings.HasSuffix(path, "/") {
+		kind = ptr(protocol.CompletionItemKindFolder)
+	}
+
+	return protocol.CompletionItem{
+		Kind:  kind,
+		Label: strings.TrimSuffix(path, "/"),
+	}
+}
+
+func addDudenPaths(items *[]protocol.CompletionItem) {
+	for _, path := range dudenPaths {
+		*items = append(*items, pathToCompletionItem(path))
+	}
 }

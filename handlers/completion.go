@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
+	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
@@ -54,51 +54,21 @@ func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 		pos:   params.Position,
 		file:  doc.Module.FileName,
 	}
-
-	aliases := make([]ast.FuncAlias, 0)
-	for _, stmt := range currentAst.Statements {
-		if decl, ok := stmt.(*ast.DeclStmt); ok {
-			if funDecl, ok := decl.Decl.(*ast.FuncDecl); ok {
-				aliases = append(aliases, funDecl.Aliases...)
-			}
-		}
-	}
 	ast.VisitAst(currentAst, visitor)
-
-	ast.VisitAst(currentAst, importVisitor(func(imprt *ast.ImportStmt) {
-		if imprt == nil || imprt.Module == nil {
-			return
-		}
-
-		contains_name := func(name string) bool {
-			for i := range imprt.ImportedSymbols {
-				if imprt.ImportedSymbols[i].Literal == name {
-					return true
-				}
-			}
-			return false
-		}
-
-		is_full_import := len(imprt.ImportedSymbols) == 0
-
-		for name, decl := range imprt.Module.PublicDecls {
-			if funDecl, ok := decl.(*ast.FuncDecl); ok && (is_full_import || contains_name(name)) {
-				aliases = append(aliases, funDecl.Aliases...)
-			}
-		}
-	}))
 
 	table := visitor.Table
 	varItems := make(map[string]protocol.CompletionItem)
+	aliases := make([]ast.FuncAlias, 0)
 	for table != nil {
 		for name := range table.Declarations {
 			if _, ok := varItems[name]; !ok {
-				if _, ok, isVar := table.LookupDecl(name); ok && !isVar {
-					continue
-				}
-				varItems[name] = protocol.CompletionItem{
-					Kind:  ptr(protocol.CompletionItemKindVariable),
-					Label: name,
+				if fnDecl, ok, isVar := table.LookupDecl(name); ok && isVar {
+					varItems[name] = protocol.CompletionItem{
+						Kind:  ptr(protocol.CompletionItemKindVariable),
+						Label: name,
+					}
+				} else if table.Enclosing == nil { // functions only in global scope
+					aliases = append(aliases, fnDecl.(*ast.FuncDecl).Aliases...)
 				}
 			}
 		}
@@ -151,7 +121,7 @@ outer:
 }
 
 func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
-	insertText := strings.TrimPrefix(strings.TrimSuffix(alias.Original.Literal, "\""), "\"") // remove the ""
+	insertText := ast.TrimStringLit(alias.Original) // remove the ""
 	return protocol.CompletionItem{
 		Kind:       ptr(protocol.CompletionItemKindFunction),
 		Label:      alias.Func.Name(),
@@ -199,17 +169,18 @@ type tableVisitor struct {
 func (*tableVisitor) BaseVisitor() {}
 
 func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
+	table := t.Table
+	for table != nil {
+		if table == symbols {
+			return
+		}
+		table = table.Enclosing
+	}
+
 	t.Table = symbols
+	log.Infof("updating scope: %v\n", symbols)
 }
 
 func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), t.pos)
-}
-
-type importVisitor func(imprt *ast.ImportStmt)
-
-func (importVisitor) BaseVisitor() {}
-
-func (f importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
-	f(imprt)
 }

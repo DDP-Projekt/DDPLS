@@ -275,6 +275,30 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
 			}
 		}
 	}
+	// module could not be parsed yet, return
+	if imprt.Module == nil {
+		return
+	}
+
+	// module could be parsed, complete symbol imports
+	for _, ident := range imprt.ImportedSymbols {
+		if !helper.IsInRange(ident.Range, vis.pos) {
+			continue
+		}
+
+		*vis.items = make([]protocol.CompletionItem, 0, len(imprt.Module.PublicDecls))
+		for name, decl := range imprt.Module.PublicDecls {
+			kind := ptr(protocol.CompletionItemKindFunction)
+			if _, ok := decl.(*ast.VarDecl); ok {
+				kind = ptr(protocol.CompletionItemKindVariable)
+			}
+			*vis.items = append(*vis.items, protocol.CompletionItem{
+				Kind:  kind,
+				Label: name,
+			})
+		}
+		break
+	}
 }
 
 func pathToCompletionItem(path string) protocol.CompletionItem {

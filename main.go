@@ -41,6 +41,10 @@ func main() {
 }
 
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+	if params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport != nil {
+		handlers.SupportsSnippets = *params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport
+	}
+
 	capabilities := handler.CreateServerCapabilities()
 	capabilities.SemanticTokensProvider = protocol.SemanticTokensRegistrationOptions{
 		SemanticTokensOptions: protocol.SemanticTokensOptions{

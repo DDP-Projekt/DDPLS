@@ -37,6 +37,14 @@ func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 
 const commentCutset = " \r\n\t[]"
 
+func trimComment(comment *token.Token) string {
+	result := ""
+	if comment != nil {
+		result = strings.Trim(comment.Literal, commentCutset) + "\n"
+	}
+	return result
+}
+
 type hoverVisitor struct {
 	hover          *protocol.Hover
 	pos            protocol.Position
@@ -61,10 +69,7 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 		if decl.Mod.FileName != h.file {
 			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Mod.FileName))
 		}
-		comment := ""
-		if decl.Comment != nil {
-			comment = strings.Trim(decl.Comment.Literal, commentCutset) + "\n"
-		}
+		comment := trimComment(decl.Comment)
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
 			Contents: protocol.MarkupContent{
@@ -130,10 +135,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 				body += h.doc.Content[start:end]
 			}
 		}
-		comment := ""
-		if fun.Comment != nil {
-			comment = strings.Trim(fun.Comment.Literal, commentCutset) + "\n"
-		}
+		comment := trimComment(fun.Comment)
 
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{

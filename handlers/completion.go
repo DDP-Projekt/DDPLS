@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -137,14 +139,40 @@ outer:
 	return false
 }
 
+var (
+	SupportsSnippets = false // set according to the client capabilities
+	aliasRegex       = regexp.MustCompile(`<(\w+)>`)
+)
+
 func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
 	insertText := ast.TrimStringLit(alias.Original) // remove the ""
+	details := insertText
+	insertTextMode := protocol.InsertTextFormatPlainText
+	if SupportsSnippets {
+		insertTextMode = protocol.InsertTextFormatSnippet
+		match_count := -1
+		log.Infof("here")
+		insertText = aliasRegex.ReplaceAllStringFunc(insertText, func(b string) string {
+			match_count++
+			submatches := aliasRegex.FindAllStringSubmatch(insertText, len(alias.Args))
+			log.Infof("submatches: %v", submatches)
+			return fmt.Sprintf("${%d:%s}", match_count+1, submatches[match_count][1])
+		})
+	}
+
+	documentation := ""
+	if alias.Func.Comment != nil {
+		documentation = trimComment(alias.Func.Comment)
+	}
+
 	return protocol.CompletionItem{
-		Kind:       ptr(protocol.CompletionItemKindFunction),
-		Label:      alias.Func.Name(),
-		InsertText: &insertText,
-		Detail:     &insertText,
-		FilterText: &insertText,
+		Kind:             ptr(protocol.CompletionItemKindFunction),
+		Documentation:    documentation,
+		Label:            alias.Func.Name(),
+		InsertText:       &insertText,
+		InsertTextFormat: &insertTextMode,
+		Detail:           &details,
+		FilterText:       &insertText,
 	}
 }
 

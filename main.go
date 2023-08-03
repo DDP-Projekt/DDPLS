@@ -1,10 +1,11 @@
 package main
 
 import (
+	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/handlers"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
-	"github.com/tliron/glsp/server"
+	lspserver "github.com/tliron/glsp/server"
 	"github.com/tliron/kutil/logging"
 
 	// Must include a backend implementation. See kutil's logging/ for other options.
@@ -13,61 +14,78 @@ import (
 
 const lsName = "ddp"
 
-var version string = "0.0.1"
-var handler protocol.Handler
+const version = "0.0.1"
+
+type DDPLS struct {
+	handler          protocol.Handler
+	dm               *documents.DocumentManager
+	diagnosticSender handlers.DiagnosticSender
+	server           *lspserver.Server
+}
+
+func newDDPLS() *DDPLS {
+	ls := &DDPLS{
+		dm:               documents.NewDocumentManager(),
+		diagnosticSender: handlers.CreateSendDiagnostics(),
+	}
+	ls.handler = protocol.Handler{
+		Initialize:                     ls.createInitialize(),
+		Initialized:                    initialized,
+		Shutdown:                       shutdown,
+		SetTrace:                       setTrace,
+		TextDocumentDidOpen:            handlers.CreateTextDocumentDidOpen(ls.dm, ls.diagnosticSender),
+		TextDocumentDidSave:            handlers.TextDocumentDidSave,
+		TextDocumentDidChange:          handlers.CreateTextDocumentDidChange(ls.dm, ls.diagnosticSender),
+		TextDocumentDidClose:           handlers.CreateTextDocumentDidClose(ls.dm),
+		TextDocumentSemanticTokensFull: handlers.CreateTextDocumentSemanticTokensFull(ls.dm),
+		TextDocumentCompletion:         handlers.CreateTextDocumentCompletion(ls.dm),
+		TextDocumentHover:              handlers.CreateTextDocumentHover(ls.dm),
+		TextDocumentDefinition:         handlers.CreateTextDocumentDefinition(ls.dm),
+		TextDocumentFoldingRange:       handlers.CreateTextDocumentFoldingRange(ls.dm),
+	}
+	ls.server = lspserver.NewServer(&ls.handler, lsName, false)
+	return ls
+}
 
 func main() {
 	// This increases logging verbosity (optional)
 	logging.Configure(1, nil)
 
-	handler = protocol.Handler{
-		Initialize:                     initialize,
-		Initialized:                    initialized,
-		Shutdown:                       shutdown,
-		SetTrace:                       setTrace,
-		TextDocumentDidOpen:            handlers.TextDocumentDidOpen,
-		TextDocumentDidSave:            handlers.TextDocumentDidSave,
-		TextDocumentDidChange:          handlers.TextDocumentDidChange,
-		TextDocumentDidClose:           handlers.TextDocumentDidClose,
-		TextDocumentSemanticTokensFull: handlers.TextDocumentSemanticTokensFull,
-		TextDocumentCompletion:         handlers.TextDocumentCompletion,
-		TextDocumentHover:              handlers.TextDocumentHover,
-		TextDocumentDefinition:         handlers.TextDocumentDefinition,
-		TextDocumentFoldingRange:       handlers.TextDocumentFoldingRange,
-	}
-	server := server.NewServer(&handler, lsName, false)
-
-	server.RunStdio()
+	ddpls := newDDPLS()
+	ddpls.server.RunStdio()
 }
 
-func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
-	if params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport != nil {
-		handlers.SupportsSnippets = *params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport
-	}
+func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
+	return func(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+		if params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport != nil {
+			handlers.SupportsSnippets = *params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport
+		}
 
-	capabilities := handler.CreateServerCapabilities()
-	capabilities.SemanticTokensProvider = protocol.SemanticTokensRegistrationOptions{
-		SemanticTokensOptions: protocol.SemanticTokensOptions{
-			Legend: protocol.SemanticTokensLegend{
-				TokenTypes:     tokenTypeLegend(),
-				TokenModifiers: tokenModifierLegend(),
+		capabilities := ls.handler.CreateServerCapabilities()
+		capabilities.SemanticTokensProvider = protocol.SemanticTokensRegistrationOptions{
+			SemanticTokensOptions: protocol.SemanticTokensOptions{
+				Legend: protocol.SemanticTokensLegend{
+					TokenTypes:     tokenTypeLegend(),
+					TokenModifiers: tokenModifierLegend(),
+				},
+				Full: true,
 			},
-			Full: true,
-		},
+		}
+		capabilities.CompletionProvider = &protocol.CompletionOptions{
+			TriggerCharacters: []string{
+				"\"",
+				"/",
+			},
+		}
+		version := version
+		return protocol.InitializeResult{
+			Capabilities: capabilities,
+			ServerInfo: &protocol.InitializeResultServerInfo{
+				Name:    lsName,
+				Version: &version,
+			},
+		}, nil
 	}
-	capabilities.CompletionProvider = &protocol.CompletionOptions{
-		TriggerCharacters: []string{
-			"\"",
-			"/",
-		},
-	}
-	return protocol.InitializeResult{
-		Capabilities: capabilities,
-		ServerInfo: &protocol.InitializeResultServerInfo{
-			Name:    lsName,
-			Version: &version,
-		},
-	}, nil
 }
 
 // helper for semantic token
@@ -93,7 +111,6 @@ func initialized(context *glsp.Context, params *protocol.InitializedParams) erro
 }
 
 func shutdown(context *glsp.Context) error {
-	protocol.SetTraceValue(protocol.TraceValueOff)
 	return nil
 }
 

@@ -20,90 +20,92 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func TextDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
-	// Add all types
-	items := make([]protocol.CompletionItem, 0)
-	for _, s := range ddpTypes {
-		items = append(items, protocol.CompletionItem{
-			Kind:  ptr(protocol.CompletionItemKindClass),
-			Label: s,
-		})
-	}
-
-	// boolean to signify if the next keyword completion should have it's first character Capitalized
-	shouldCapitalize := false
-	var doc *documents.DocumentState
-	// Get the current Document
-	if d, ok := documents.Get(params.TextDocument.URI); ok {
-		index := params.Position.IndexIn(d.Content) // The index of the cursor
-		shouldCapitalize = decideCapitalization(index, d.Content)
-		doc = d
-	}
-
-	for _, s := range ddpKeywords {
-		// Capitalize the first character of the string if it's the start of a sentence
-		if shouldCapitalize {
-			runes := []rune(s)
-			runes[0] = unicode.ToUpper(runes[0])
-			s = string(runes)
+func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
+	return func(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
+		// Add all types
+		items := make([]protocol.CompletionItem, 0)
+		for _, s := range ddpTypes {
+			items = append(items, protocol.CompletionItem{
+				Kind:  ptr(protocol.CompletionItemKindClass),
+				Label: s,
+			})
 		}
 
-		items = append(items, protocol.CompletionItem{
-			Kind:  ptr(protocol.CompletionItemKindKeyword),
-			Label: s,
-		})
-	}
+		// boolean to signify if the next keyword completion should have it's first character Capitalized
+		shouldCapitalize := false
+		var doc *documents.DocumentState
+		// Get the current Document
+		if d, ok := dm.Get(params.TextDocument.URI); ok {
+			index := params.Position.IndexIn(d.Content) // The index of the cursor
+			shouldCapitalize = decideCapitalization(index, d.Content)
+			doc = d
+		}
 
-	currentAst := doc.Module.Ast
+		for _, s := range ddpKeywords {
+			// Capitalize the first character of the string if it's the start of a sentence
+			if shouldCapitalize {
+				runes := []rune(s)
+				runes[0] = unicode.ToUpper(runes[0])
+				s = string(runes)
+			}
 
-	visitor := &tableVisitor{
-		Table: currentAst.Symbols,
-		pos:   params.Position,
-		file:  doc.Module.FileName,
-	}
-	ast.VisitAst(currentAst, visitor)
+			items = append(items, protocol.CompletionItem{
+				Kind:  ptr(protocol.CompletionItemKindKeyword),
+				Label: s,
+			})
+		}
 
-	table := visitor.Table
-	varItems := make(map[string]protocol.CompletionItem)
-	aliases := make([]ast.FuncAlias, 0)
-	for table != nil {
-		for name := range table.Declarations {
-			if _, ok := varItems[name]; !ok {
-				if fnDecl, ok, isVar := table.LookupDecl(name); ok && isVar {
-					varItems[name] = protocol.CompletionItem{
-						Kind:  ptr(protocol.CompletionItemKindVariable),
-						Label: name,
+		currentAst := doc.Module.Ast
+
+		visitor := &tableVisitor{
+			Table: currentAst.Symbols,
+			pos:   params.Position,
+			file:  doc.Module.FileName,
+		}
+		ast.VisitAst(currentAst, visitor)
+
+		table := visitor.Table
+		varItems := make(map[string]protocol.CompletionItem)
+		aliases := make([]ast.FuncAlias, 0)
+		for table != nil {
+			for name := range table.Declarations {
+				if _, ok := varItems[name]; !ok {
+					if fnDecl, ok, isVar := table.LookupDecl(name); ok && isVar {
+						varItems[name] = protocol.CompletionItem{
+							Kind:  ptr(protocol.CompletionItemKindVariable),
+							Label: name,
+						}
+					} else if table.Enclosing == nil { // functions only in global scope
+						aliases = append(aliases, fnDecl.(*ast.FuncDecl).Aliases...)
 					}
-				} else if table.Enclosing == nil { // functions only in global scope
-					aliases = append(aliases, fnDecl.(*ast.FuncDecl).Aliases...)
 				}
 			}
+
+			table = table.Enclosing
 		}
 
-		table = table.Enclosing
-	}
+		for _, v := range varItems {
+			items = append(items, v)
+		}
 
-	for _, v := range varItems {
-		items = append(items, v)
-	}
+		for _, alias := range aliases {
+			items = append(items, aliasToCompletionItem(alias))
+		}
 
-	for _, alias := range aliases {
-		items = append(items, aliasToCompletionItem(alias))
-	}
+		// must be here at the end because it might clear previous items
+		triggerChar := (*string)(nil)
+		if params.Context != nil {
+			triggerChar = params.Context.TriggerCharacter
+		}
+		ast.VisitAst(currentAst, &importVisitor{
+			pos:         params.Position,
+			items:       &items,
+			modPath:     doc.Module.FileName,
+			triggerChar: triggerChar,
+		})
 
-	// must be here at the end because it might clear previous items
-	triggerChar := (*string)(nil)
-	if params.Context != nil {
-		triggerChar = params.Context.TriggerCharacter
+		return items, nil
 	}
-	ast.VisitAst(currentAst, &importVisitor{
-		pos:         params.Position,
-		items:       &items,
-		modPath:     doc.Module.FileName,
-		triggerChar: triggerChar,
-	})
-
-	return items, nil
 }
 
 func decideCapitalization(index int, document string) bool {

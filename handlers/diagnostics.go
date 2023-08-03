@@ -14,43 +14,46 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-var refreshing = false
+type DiagnosticSender func(*documents.DocumentManager, glsp.NotifyFunc, string, bool)
 
-func sendDiagnostics(notify glsp.NotifyFunc, vscURI string, delay bool) {
-	if refreshing {
-		return
+func CreateSendDiagnostics() DiagnosticSender {
+	refreshing := false
+	return func(dm *documents.DocumentManager, notify glsp.NotifyFunc, vscURI string, delay bool) {
+		if refreshing {
+			return
+		}
+		refreshing = true
+
+		go func(vscURI string) {
+			if delay {
+				time.Sleep(500 * time.Millisecond)
+			}
+			refreshing = false
+
+			doc, ok := dm.Get(vscURI)
+			if !ok {
+				log.Warningf("Could not retrieve document %s", vscURI)
+				return
+			}
+			path := doc.Uri.Filepath()
+
+			visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
+
+			if err := dm.ReParse(doc.Uri, func(err ddperror.Error) {
+				visitor.add(err)
+			}); err != nil {
+				log.Errorf("parser error: %s", err)
+				return
+			}
+
+			ast.VisitModuleRec(doc.Module, visitor)
+
+			go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+				URI:         vscURI,
+				Diagnostics: visitor.diagnostics,
+			})
+		}(vscURI)
 	}
-	refreshing = true
-
-	go func(vscURI string) {
-		if delay {
-			time.Sleep(500 * time.Millisecond)
-		}
-		refreshing = false
-
-		doc, ok := documents.Get(vscURI)
-		if !ok {
-			log.Warningf("Could not retrieve document %s", vscURI)
-			return
-		}
-		path := doc.Uri.Filepath()
-
-		visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
-
-		if err := doc.ReParse(func(err ddperror.Error) {
-			visitor.add(err)
-		}); err != nil {
-			log.Errorf("parser error: %s", err)
-			return
-		}
-
-		ast.VisitModuleRec(doc.Module, visitor)
-
-		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-			URI:         vscURI,
-			Diagnostics: visitor.diagnostics,
-		})
-	}(vscURI)
 }
 
 type diagnosticVisitor struct {

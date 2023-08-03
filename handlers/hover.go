@@ -16,23 +16,25 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func TextDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-	doc, ok := documents.Get(params.TextDocument.URI)
-	if !ok {
-		return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
+func CreateTextDocumentHover(dm *documents.DocumentManager) protocol.TextDocumentHoverFunc {
+	return func(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+		doc, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
+		}
+
+		hover := &hoverVisitor{
+			hover:          nil,
+			pos:            params.Position,
+			currentSymbols: doc.Module.Ast.Symbols,
+			doc:            doc,
+			file:           doc.Module.FileName,
+		}
+
+		ast.VisitAst(doc.Module.Ast, hover)
+
+		return hover.hover, nil
 	}
-
-	hover := &hoverVisitor{
-		hover:          nil,
-		pos:            params.Position,
-		currentSymbols: doc.Module.Ast.Symbols,
-		doc:            doc,
-		file:           doc.Module.FileName,
-	}
-
-	ast.VisitAst(doc.Module.Ast, hover)
-
-	return hover.hover, nil
 }
 
 const commentCutset = " \r\n\t[]"

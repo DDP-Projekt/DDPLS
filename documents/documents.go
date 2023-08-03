@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/DDP-Projekt/DDPLS/uri"
@@ -18,18 +19,9 @@ type DocumentState struct {
 	parseMutex sync.Mutex  // the mutex used for parsing
 }
 
-func (d *DocumentState) ReParse(errorHandler ddperror.Handler) (err error) {
+func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
 	d.parseMutex.Lock()
 	defer d.parseMutex.Unlock()
-
-	modules := map[string]*ast.Module{}
-	documentStates.Range(func(_, value any) bool {
-		doc := value.(*DocumentState)
-		if doc != d {
-			modules[doc.Module.FileName] = doc.Module
-		}
-		return true
-	})
 
 	d.Module, err = parser.Parse(parser.Options{
 		FileName:     d.Path,
@@ -41,32 +33,66 @@ func (d *DocumentState) ReParse(errorHandler ddperror.Handler) (err error) {
 	return err
 }
 
-// all the documents state
-// keys are the params.TextDocument.URI
-var documentStates = &sync.Map{}
+// a synced map that manages document states
+type DocumentManager struct {
+	mu             sync.RWMutex
+	documentStates map[uri.URI]*DocumentState
+}
+
+func NewDocumentManager() *DocumentManager {
+	return &DocumentManager{
+		mu:             sync.RWMutex{},
+		documentStates: make(map[uri.URI]*DocumentState),
+	}
+}
 
 // adds a document to the map
 // and parses its content
-func AddAndParse(vscURI, content string) error {
+func (dm *DocumentManager) AddAndParse(vscURI, content string) error {
 	docURI := uri.FromURI(vscURI)
 	docState := &DocumentState{
 		Uri:     docURI,
 		Content: content,
 		Path:    docURI.Filepath(),
 	}
-	documentStates.Store(docURI, docState)
-	return docState.ReParse(ddperror.EmptyHandler)
+	dm.mu.Lock()
+	dm.documentStates[docURI] = docState
+	dm.mu.Unlock()
+	return dm.ReParse(docURI, ddperror.EmptyHandler)
 }
 
-func Get(vscURI string) (*DocumentState, bool) {
-	doc, ok := documentStates.Load(uri.FromURI(vscURI))
+func (dm *DocumentManager) ReParse(docUri uri.URI, errHndl ddperror.Handler) error {
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+
+	doc, ok := dm.documentStates[docUri]
+	if !ok {
+		return fmt.Errorf("Document %s not found in map", docUri)
+	}
+
+	modules := map[string]*ast.Module{}
+	for _, v := range dm.documentStates {
+		if v != doc {
+			modules[v.Module.FileName] = v.Module
+		}
+	}
+
+	return doc.reParseInContext(modules, errHndl)
+}
+
+func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+	doc, ok := dm.documentStates[uri.FromURI(vscURI)]
 	if ok {
-		return doc.(*DocumentState), ok
+		return doc, ok
 	} else {
 		return nil, ok
 	}
 }
 
-func Delete(vscURI string) {
-	documentStates.Delete(uri.FromURI(vscURI))
+func (dm *DocumentManager) Delete(vscURI string) {
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
+	delete(dm.documentStates, uri.FromURI(vscURI))
 }

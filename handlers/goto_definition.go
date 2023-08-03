@@ -11,20 +11,22 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func TextDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (interface{}, error) {
-	doc, ok := documents.Get(params.TextDocument.URI)
-	if !ok {
-		return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+func CreateTextDocumentDefinition(dm *documents.DocumentManager) protocol.TextDocumentDefinitionFunc {
+	return func(context *glsp.Context, params *protocol.DefinitionParams) (any, error) {
+		doc, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+		}
+
+		definition := &definitionVisitor{
+			location: nil,
+			pos:      params.Position,
+		}
+
+		ast.VisitModuleRec(doc.Module, definition)
+
+		return definition.location, nil
 	}
-
-	definition := &definitionVisitor{
-		location: nil,
-		pos:      params.Position,
-	}
-
-	ast.VisitModuleRec(doc.Module, definition)
-
-	return definition.location, nil
 }
 
 type definitionVisitor struct {

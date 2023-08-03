@@ -10,20 +10,22 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func TextDocumentFoldingRange(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
-	doc, ok := documents.Get(params.TextDocument.URI)
-	if !ok {
-		return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.TextDocumentFoldingRangeFunc {
+	return func(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
+		doc, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+		}
+
+		visitor := &foldingVisitor{
+			foldRanges: make([]protocol.FoldingRange, 0),
+			module:     doc.Module,
+		}
+
+		ast.VisitAst(doc.Module.Ast, visitor)
+
+		return visitor.foldRanges, nil
 	}
-
-	visitor := &foldingVisitor{
-		foldRanges: make([]protocol.FoldingRange, 0),
-		module:     doc.Module,
-	}
-
-	ast.VisitAst(doc.Module.Ast, visitor)
-
-	return visitor.foldRanges, nil
 }
 
 type foldingVisitor struct {

@@ -13,23 +13,25 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-func TextDocumentSemanticTokensFull(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	act, ok := documents.Get(params.TextDocument.URI)
-	if !ok {
-		return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
+func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protocol.TextDocumentSemanticTokensFullFunc {
+	return func(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+		act, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
+		}
+		path := act.Path
+
+		tokenizer := &semanticTokenizer{
+			tokens: make([]highlightedToken, 0),
+			file:   path,
+			doc:    act,
+		}
+
+		ast.VisitAst(act.Module.Ast, tokenizer)
+
+		tokens := tokenizer.getTokens()
+		return tokens, nil
 	}
-	path := act.Path
-
-	tokenizer := &semanticTokenizer{
-		tokens: make([]highlightedToken, 0),
-		file:   path,
-		doc:    act,
-	}
-
-	ast.VisitAst(act.Module.Ast, tokenizer)
-
-	tokens := tokenizer.getTokens()
-	return tokens, nil
 }
 
 type highlightedToken struct {

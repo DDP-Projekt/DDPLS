@@ -22,9 +22,34 @@ func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protoco
 		path := act.Path
 
 		tokenizer := &semanticTokenizer{
+			tokens:          make([]highlightedToken, 0),
+			file:            path,
+			doc:             act,
+			shouldVisitFunc: nil,
+		}
+
+		ast.VisitAst(act.Module.Ast, tokenizer)
+
+		tokens := tokenizer.getTokens()
+		return tokens, nil
+	}
+}
+func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocumentSemanticTokensRangeFunc {
+	return func(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
+		act, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("%s not in document map (Range: %v)", params.TextDocument.URI, params.Range)
+		}
+		path := act.Path
+
+		tokenizer := &semanticTokenizer{
 			tokens: make([]highlightedToken, 0),
 			file:   path,
 			doc:    act,
+			shouldVisitFunc: func(node ast.Node) bool {
+				rng := node.GetRange()
+				return helper.IsInRange(rng, params.Range.Start) || helper.IsInRange(rng, params.Range.End)
+			},
 		}
 
 		ast.VisitAst(act.Module.Ast, tokenizer)
@@ -63,9 +88,17 @@ func (t *highlightedToken) serialize(previous highlightedToken) []protocol.UInte
 }
 
 type semanticTokenizer struct {
-	file   string
-	tokens []highlightedToken
-	doc    *documents.DocumentState
+	file            string
+	tokens          []highlightedToken
+	doc             *documents.DocumentState
+	shouldVisitFunc func(node ast.Node) bool
+}
+
+func (t *semanticTokenizer) ShouldVisit(node ast.Node) bool {
+	if t.shouldVisitFunc != nil {
+		return t.shouldVisitFunc(node)
+	}
+	return true
 }
 
 func (t *semanticTokenizer) getTokens() *protocol.SemanticTokens {

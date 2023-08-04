@@ -153,11 +153,9 @@ func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
 	if SupportsSnippets {
 		insertTextMode = protocol.InsertTextFormatSnippet
 		match_count := -1
-		log.Infof("here")
 		insertText = aliasRegex.ReplaceAllStringFunc(insertText, func(b string) string {
 			match_count++
 			submatches := aliasRegex.FindAllStringSubmatch(insertText, len(alias.Args))
-			log.Infof("submatches: %v", submatches)
 			return fmt.Sprintf("${%d:%s}", match_count+1, submatches[match_count][1])
 		})
 	}

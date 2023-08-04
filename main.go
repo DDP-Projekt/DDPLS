@@ -12,9 +12,10 @@ import (
 	_ "github.com/tliron/kutil/logging/simple"
 )
 
-const lsName = "ddp"
-
-const version = "0.0.1"
+const (
+	lsName  = "ddp"
+	version = "0.0.1"
+)
 
 type DDPLS struct {
 	handler          protocol.Handler
@@ -29,19 +30,20 @@ func newDDPLS() *DDPLS {
 		diagnosticSender: handlers.CreateSendDiagnostics(),
 	}
 	ls.handler = protocol.Handler{
-		Initialize:                     ls.createInitialize(),
-		Initialized:                    initialized,
-		Shutdown:                       shutdown,
-		SetTrace:                       setTrace,
-		TextDocumentDidOpen:            handlers.CreateTextDocumentDidOpen(ls.dm, ls.diagnosticSender),
-		TextDocumentDidSave:            handlers.TextDocumentDidSave,
-		TextDocumentDidChange:          handlers.CreateTextDocumentDidChange(ls.dm, ls.diagnosticSender),
-		TextDocumentDidClose:           handlers.CreateTextDocumentDidClose(ls.dm),
-		TextDocumentSemanticTokensFull: handlers.CreateTextDocumentSemanticTokensFull(ls.dm),
-		TextDocumentCompletion:         handlers.CreateTextDocumentCompletion(ls.dm),
-		TextDocumentHover:              handlers.CreateTextDocumentHover(ls.dm),
-		TextDocumentDefinition:         handlers.CreateTextDocumentDefinition(ls.dm),
-		TextDocumentFoldingRange:       handlers.CreateTextDocumentFoldingRange(ls.dm),
+		Initialize:                      ls.createInitialize(),
+		Initialized:                     initialized,
+		Shutdown:                        shutdown,
+		SetTrace:                        setTrace,
+		TextDocumentDidOpen:             handlers.CreateTextDocumentDidOpen(ls.dm, ls.diagnosticSender),
+		TextDocumentDidSave:             handlers.TextDocumentDidSave,
+		TextDocumentDidChange:           handlers.CreateTextDocumentDidChange(ls.dm, ls.diagnosticSender),
+		TextDocumentDidClose:            handlers.CreateTextDocumentDidClose(ls.dm),
+		TextDocumentSemanticTokensFull:  handlers.CreateTextDocumentSemanticTokensFull(ls.dm),
+		TextDocumentSemanticTokensRange: handlers.CreateSemanticTokensRange(ls.dm),
+		TextDocumentCompletion:          handlers.CreateTextDocumentCompletion(ls.dm),
+		TextDocumentHover:               handlers.CreateTextDocumentHover(ls.dm),
+		TextDocumentDefinition:          handlers.CreateTextDocumentDefinition(ls.dm),
+		TextDocumentFoldingRange:        handlers.CreateTextDocumentFoldingRange(ls.dm),
 	}
 	ls.server = lspserver.NewServer(&ls.handler, lsName, false)
 	return ls
@@ -68,7 +70,8 @@ func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
 					TokenTypes:     tokenTypeLegend(),
 					TokenModifiers: tokenModifierLegend(),
 				},
-				Full: true,
+				Full:  true,
+				Range: true,
 			},
 		}
 		capabilities.CompletionProvider = &protocol.CompletionOptions{

@@ -8,8 +8,6 @@ require (
 	github.com/tliron/kutil v0.1.68
 )
 
-replace github.com/tliron/glsp => github.com/bafto/glsp v0.1.2-0.20230804101241-ee0759ae70e0
-
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -31,3 +29,5 @@ require (
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/term v0.7.0 // indirect
 )
+
+replace github.com/tliron/glsp => github.com/bafto/glsp v0.1.2-0.20230806091905-942e1aee0810

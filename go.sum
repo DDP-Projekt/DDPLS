@@ -2,8 +2,8 @@ github.com/DDP-Projekt/Kompilierer v0.0.0-20230804102646-3a8e8850aca6 h1:iDlU2sE
 github.com/DDP-Projekt/Kompilierer v0.0.0-20230804102646-3a8e8850aca6/go.mod h1:GggPzwh9qfD8iC3Lqp7AdPb6fqbHjzEZJvS7d3jRugI=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
-github.com/bafto/glsp v0.1.2-0.20230804101241-ee0759ae70e0 h1:aowQXKGjcJC+NqqfZxf7LyLvIioqiG34P1JQYyk3ad0=
-github.com/bafto/glsp v0.1.2-0.20230804101241-ee0759ae70e0/go.mod h1:lQDXPfht/Um/FJLthIpGyXclyKq7uVUolignlAyK66Q=
+github.com/bafto/glsp v0.1.2-0.20230806091905-942e1aee0810 h1:SqEtvmrp0wqvKYw9J7DSvnMM8l12cDj98k8vKlVB/7U=
+github.com/bafto/glsp v0.1.2-0.20230806091905-942e1aee0810/go.mod h1:lQDXPfht/Um/FJLthIpGyXclyKq7uVUolignlAyK66Q=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

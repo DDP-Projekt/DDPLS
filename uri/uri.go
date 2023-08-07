@@ -3,7 +3,6 @@
 package uri
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -62,9 +61,11 @@ slow:
 	if err != nil {
 		return "", err
 	}
-	if u.Scheme != fileScheme {
-		return "", fmt.Errorf("only file URIs are supported, got %q from %q", u.Scheme, uri)
-	}
+	/*
+		if u.Scheme != fileScheme {
+			return "", fmt.Errorf("only file URIs are supported, got %q from %q", u.Scheme, uri)
+		}
+	*/
 	// If the URI is a Windows URI, we trim the leading "/" and uppercase
 	// the drive letter, which will never be case sensitive.
 	if isWindowsDriveURIPath(u.Path) {

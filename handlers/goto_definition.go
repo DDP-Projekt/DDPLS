@@ -21,6 +21,8 @@ func CreateTextDocumentDefinition(dm *documents.DocumentManager) protocol.TextDo
 		definition := &definitionVisitor{
 			location: nil,
 			pos:      params.Position,
+			dm:       dm,
+			doc:      doc,
 		}
 
 		ast.VisitModuleRec(doc.Module, definition)
@@ -32,6 +34,8 @@ func CreateTextDocumentDefinition(dm *documents.DocumentManager) protocol.TextDo
 type definitionVisitor struct {
 	location *protocol.Location
 	pos      protocol.Position
+	dm       *documents.DocumentManager
+	doc      *documents.DocumentState
 }
 
 func (*definitionVisitor) BaseVisitor() {}
@@ -42,8 +46,9 @@ func (def *definitionVisitor) ShouldVisit(node ast.Node) bool {
 
 func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 	if decl, ok := e.Declaration, e.Declaration != nil; ok {
+
 		def.location = &protocol.Location{
-			URI:   string(uri.FromPath(decl.Mod.FileName)),
+			URI:   def.getUri(e.Declaration),
 			Range: helper.ToProtocolRange(decl.GetRange()),
 		}
 	}
@@ -51,8 +56,18 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) {
 	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
-			URI:   string(uri.FromPath(fun.Mod.FileName)),
+			URI:   def.getUri(e.Func),
 			Range: helper.ToProtocolRange(fun.GetRange()),
 		}
 	}
+}
+
+func (def *definitionVisitor) getUri(decl ast.Declaration) string {
+	uri_ := uri.FromPath(decl.Module().FileName)
+	if decl.Module() == def.doc.Module {
+		uri_ = def.doc.Uri
+	} else if mod, ok := def.dm.GetFromMod(decl.Module()); ok {
+		uri_ = mod.Uri
+	}
+	return string(uri_)
 }

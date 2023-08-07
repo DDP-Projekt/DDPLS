@@ -91,6 +91,17 @@ func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
 	}
 }
 
+func (dm *DocumentManager) GetFromMod(mod *ast.Module) (*DocumentState, bool) {
+	dm.mu.RLock()
+	defer dm.mu.RUnlock()
+	for _, v := range dm.documentStates {
+		if v.Module == mod {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
 func (dm *DocumentManager) Delete(vscURI string) {
 	dm.mu.Lock()
 	defer dm.mu.Unlock()

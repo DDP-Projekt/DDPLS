@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
-	"github.com/DDP-Projekt/DDPLS/log"
-	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -35,9 +33,7 @@ func CreateTextDocumentDidChange(dm *documents.DocumentManager, sendDiagnostics 
 			case protocol.TextDocumentContentChangeEventWhole:
 				doc.Content = change.Text
 			}
-		}
-		if err := dm.ReParse(doc.Uri, ddperror.EmptyHandler); err != nil {
-			log.Warningf("Error while parsing changed document %s: %s", doc.Path, err)
+			doc.NeedReparse.Store(true)
 		}
 		sendDiagnostics(dm, context.Notify, string(doc.Uri), true)
 		return nil

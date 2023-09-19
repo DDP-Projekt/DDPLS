@@ -12,17 +12,19 @@ import (
 
 func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.TextDocumentFoldingRangeFunc {
 	return func(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
-		doc, ok := dm.Get(params.TextDocument.URI)
-		if !ok {
+		var docMod *ast.Module
+		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
 			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+		} else {
+			docMod = doc.Module
 		}
 
 		visitor := &foldingVisitor{
 			foldRanges: make([]protocol.FoldingRange, 0),
-			module:     doc.Module,
+			module:     docMod,
 		}
 
-		ast.VisitAst(doc.Module.Ast, visitor)
+		ast.VisitAst(docMod.Ast, visitor)
 
 		return visitor.foldRanges, nil
 	}

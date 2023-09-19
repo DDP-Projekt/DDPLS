@@ -18,20 +18,21 @@ import (
 
 func CreateTextDocumentHover(dm *documents.DocumentManager) protocol.TextDocumentHoverFunc {
 	return func(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
-		doc, ok := dm.Get(params.TextDocument.URI)
-		if !ok {
-			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
-		}
-
 		hover := &hoverVisitor{
-			hover:          nil,
-			pos:            params.Position,
-			currentSymbols: doc.Module.Ast.Symbols,
-			doc:            doc,
-			file:           doc.Module.FileName,
+			hover: nil,
+			pos:   params.Position,
+		}
+		var docAst *ast.Ast
+		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
+			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
+		} else {
+			hover.currentSymbols = doc.Module.Ast.Symbols
+			hover.file = doc.Module.FileName
+			hover.docContent = doc.Content
+			docAst = doc.Module.Ast
 		}
 
-		ast.VisitAst(doc.Module.Ast, hover)
+		ast.VisitAst(docAst, hover)
 
 		return hover.hover, nil
 	}
@@ -51,7 +52,7 @@ type hoverVisitor struct {
 	hover          *protocol.Hover
 	pos            protocol.Position
 	currentSymbols *ast.SymbolTable
-	doc            *documents.DocumentState
+	docContent     string
 	file           string
 }
 
@@ -124,8 +125,8 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 				body += string(content[start:end])
 			}
 		} else {
-			start, end := declRange.IndexesIn(h.doc.Content)
-			body = h.doc.Content[start:end]
+			start, end := declRange.IndexesIn(h.docContent)
+			body = h.docContent[start:end]
 
 			if fun.Body != nil {
 				body += "\n..."
@@ -133,8 +134,8 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 					Start: fun.Body.Range.End,
 					End:   fun.GetRange().End,
 				})
-				start, end = endRange.IndexesIn(h.doc.Content)
-				body += h.doc.Content[start:end]
+				start, end = endRange.IndexesIn(h.docContent)
+				body += h.docContent[start:end]
 			}
 		}
 		comment := trimComment(fun.Comment)

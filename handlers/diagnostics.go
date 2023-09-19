@@ -7,6 +7,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/log"
+	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -30,23 +31,29 @@ func CreateSendDiagnostics() DiagnosticSender {
 			}
 			refreshing = false
 
-			doc, ok := dm.Get(vscURI)
-			if !ok {
+			var (
+				docMod *ast.Module
+				docUri uri.URI
+			)
+			if doc, ok := dm.Get(vscURI); !ok {
 				log.Warningf("Could not retrieve document %s", vscURI)
 				return
+			} else {
+				docMod = doc.Module
+				docUri = doc.Uri
 			}
-			path := doc.Uri.Filepath()
+			path := docUri.Filepath()
 
 			visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
 
-			if err := dm.ReParse(doc.Uri, func(err ddperror.Error) {
+			if err := dm.ReParse(docUri, func(err ddperror.Error) {
 				visitor.add(err)
 			}); err != nil {
 				log.Errorf("parser error: %s", err)
 				return
 			}
 
-			ast.VisitModuleRec(doc.Module, visitor)
+			ast.VisitModuleRec(docMod, visitor)
 
 			go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 				URI:         vscURI,

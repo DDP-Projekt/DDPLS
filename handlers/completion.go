@@ -22,6 +22,7 @@ import (
 
 func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
 	return func(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
+		log.Infof("requested completion")
 		// Add all types
 		items := make([]protocol.CompletionItem, 0)
 		for _, s := range ddpTypes {
@@ -33,12 +34,12 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 		// boolean to signify if the next keyword completion should have it's first character Capitalized
 		shouldCapitalize := false
-		var doc *documents.DocumentState
+		var docModule *ast.Module
 		// Get the current Document
 		if d, ok := dm.Get(params.TextDocument.URI); ok {
 			index := params.Position.IndexIn(d.Content) // The index of the cursor
 			shouldCapitalize = decideCapitalization(index, d.Content)
-			doc = d
+			docModule = d.Module
 		}
 
 		for _, s := range ddpKeywords {
@@ -55,12 +56,12 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 			})
 		}
 
-		currentAst := doc.Module.Ast
+		currentAst := docModule.Ast
 
 		visitor := &tableVisitor{
 			Table: currentAst.Symbols,
 			pos:   params.Position,
-			file:  doc.Module.FileName,
+			file:  docModule.FileName,
 		}
 		ast.VisitAst(currentAst, visitor)
 
@@ -100,7 +101,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		ast.VisitAst(currentAst, &importVisitor{
 			pos:         params.Position,
 			items:       &items,
-			modPath:     doc.Module.FileName,
+			modPath:     docModule.FileName,
 			triggerChar: triggerChar,
 		})
 

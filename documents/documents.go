@@ -3,6 +3,7 @@ package documents
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
@@ -12,11 +13,12 @@ import (
 
 // represents the state of a single document
 type DocumentState struct {
-	Content    string      // the content of the document
-	Uri        uri.URI     // the uri from the client
-	Path       string      // the filepath as parsed from the uri
-	Module     *ast.Module // the corresponding ddp module
-	parseMutex sync.Mutex  // the mutex used for parsing
+	Content     string      // the content of the document
+	Uri         uri.URI     // the uri from the client
+	Path        string      // the filepath as parsed from the uri
+	Module      *ast.Module // the corresponding ddp module
+	NeedReparse atomic.Bool // whether the document needs to be reparsed
+	parseMutex  sync.Mutex  // the mutex used for parsing
 }
 
 func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
@@ -29,6 +31,17 @@ func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHa
 		Modules:      modules,
 		ErrorHandler: errorHandler,
 	})
+	d.NeedReparse.Store(false)
+
+	// cache all imports (like Duden modules etc.)
+	if err == nil {
+		for _, imprt := range d.Module.Imports {
+			imprt_uri := uri.FromPath(imprt.Module.FileName)
+			if _, ok := modules[imprt_uri.Filepath()]; !ok {
+				modules[imprt_uri.Filepath()] = imprt.Module
+			}
+		}
+	}
 
 	return err
 }
@@ -58,6 +71,7 @@ func (dm *DocumentManager) AddAndParse(vscURI, content string) error {
 	dm.mu.Lock()
 	dm.documentStates[docURI] = docState
 	dm.mu.Unlock()
+
 	return dm.ReParse(docURI, ddperror.EmptyHandler)
 }
 
@@ -85,6 +99,20 @@ func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
 	defer dm.mu.RUnlock()
 	doc, ok := dm.documentStates[uri.FromURI(vscURI)]
 	if ok {
+		if doc.NeedReparse.Load() {
+			// check if doc is currently being reparsed by trying to aquire the mutex
+			if doc.parseMutex.TryLock() {
+				// it was not being parsed, so we unlock the mutex
+				// which will be locked again by ReParse
+				doc.parseMutex.Unlock()
+				ok = dm.ReParse(doc.Uri, ddperror.EmptyHandler) == nil
+			} else {
+				// if it is being currently reparsed we wait for it to finish
+				// by aquiring the mutex and then immediately unlock and return it
+				doc.parseMutex.Lock()
+				doc.parseMutex.Unlock()
+			}
+		}
 		return doc, ok
 	} else {
 		return nil, ok

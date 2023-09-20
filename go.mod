@@ -3,7 +3,7 @@ module github.com/DDP-Projekt/DDPLS
 go 1.18
 
 require (
-	github.com/DDP-Projekt/Kompilierer v0.0.1-pre.0.20230910165437-55021c335bab
+	github.com/DDP-Projekt/Kompilierer v0.0.8-pre.0.20230918114606-e6176aad1b7b
 	github.com/tliron/glsp v0.1.2-0.20220628161923-1d70ae869611
 	github.com/tliron/kutil v0.1.68
 )
@@ -25,9 +25,9 @@ require (
 	github.com/tliron/commonlog v0.1.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.8.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
 )
 
 replace github.com/tliron/glsp => github.com/bafto/glsp v0.1.2-0.20230806091905-942e1aee0810

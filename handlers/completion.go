@@ -22,7 +22,6 @@ import (
 
 func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
 	return func(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
-		log.Infof("requested completion")
 		// Add all types
 		items := make([]protocol.CompletionItem, 0)
 		for _, s := range ddpTypes {

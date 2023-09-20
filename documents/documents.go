@@ -36,9 +36,11 @@ func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHa
 	// cache all imports (like Duden modules etc.)
 	if err == nil {
 		for _, imprt := range d.Module.Imports {
-			imprt_uri := uri.FromPath(imprt.Module.FileName)
-			if _, ok := modules[imprt_uri.Filepath()]; !ok {
-				modules[imprt_uri.Filepath()] = imprt.Module
+			if imprt.Module != nil {
+				imprt_uri := uri.FromPath(imprt.Module.FileName)
+				if _, ok := modules[imprt_uri.Filepath()]; !ok {
+					modules[imprt_uri.Filepath()] = imprt.Module
+				}
 			}
 		}
 	}

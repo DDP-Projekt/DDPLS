@@ -88,7 +88,7 @@ func (dm *DocumentManager) ReParse(docUri uri.URI, errHndl ddperror.Handler) err
 
 	modules := map[string]*ast.Module{}
 	for _, v := range dm.documentStates {
-		if v != doc {
+		if v != doc && v.Module != nil {
 			modules[v.Module.FileName] = v.Module
 		}
 	}

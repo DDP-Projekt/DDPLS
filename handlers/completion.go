@@ -147,7 +147,7 @@ var (
 )
 
 func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
-	insertText := ast.TrimStringLit(alias.Original) // remove the ""
+	insertText := ast.TrimStringLit(&alias.Original) // remove the ""
 	details := insertText
 	insertTextMode := protocol.InsertTextFormatPlainText
 	if SupportsSnippets {
@@ -271,7 +271,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
 		// are in an import path
 		*vis.items = make([]protocol.CompletionItem, 0, len(dudenPaths))
 
-		incompletePath := filepath.Dir(ast.TrimStringLit(imprt.FileName))
+		incompletePath := filepath.Dir(ast.TrimStringLit(&imprt.FileName))
 
 		if incompletePath == "." {
 			addDudenPaths(vis.items)

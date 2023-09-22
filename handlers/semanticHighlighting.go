@@ -122,12 +122,12 @@ func (t *semanticTokenizer) add(tok highlightedToken) {
 }
 
 func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) {
-	t.add(newHightlightedToken(token.NewRange(d.NameTok, d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
+	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 }
 func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
-	t.add(newHightlightedToken(token.NewRange(d.NameTok, d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
+	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	for _, param := range d.ParamNames {
-		t.add(newHightlightedToken(token.NewRange(param, param), t.doc, protocol.SemanticTokenTypeParameter, nil))
+		t.add(newHightlightedToken(token.NewRange(&param, &param), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
 }
 

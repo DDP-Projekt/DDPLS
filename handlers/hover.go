@@ -97,7 +97,7 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 		var declRange protocol.Range
 
 		if fun.Body != nil {
-			declRange = helper.ToProtocolRange(token.NewRange(fun.Tok, fun.Body.Colon))
+			declRange = helper.ToProtocolRange(token.NewRange(&fun.Tok, &fun.Body.Colon))
 		} else {
 			declRange = helper.ToProtocolRange(fun.GetRange())
 		}

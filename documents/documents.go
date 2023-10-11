@@ -13,12 +13,20 @@ import (
 
 // represents the state of a single document
 type DocumentState struct {
-	Content     string      // the content of the document
-	Uri         uri.URI     // the uri from the client
-	Path        string      // the filepath as parsed from the uri
-	Module      *ast.Module // the corresponding ddp module
-	NeedReparse atomic.Bool // whether the document needs to be reparsed
-	parseMutex  sync.Mutex  // the mutex used for parsing
+	Content      string           // the content of the document
+	Uri          uri.URI          // the uri from the client
+	Path         string           // the filepath as parsed from the uri
+	Module       *ast.Module      // the corresponding ddp module
+	NeedReparse  atomic.Bool      // whether the document needs to be reparsed
+	LatestErrors []ddperror.Error // the errors from the last parsing
+	parseMutex   sync.Mutex       // the mutex used for parsing
+}
+
+func (d *DocumentState) newErrorCollector() ddperror.Handler {
+	d.LatestErrors = make([]ddperror.Error, 0, 10)
+	return func(err ddperror.Error) {
+		d.LatestErrors = append(d.LatestErrors, err)
+	}
 }
 
 func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
@@ -74,10 +82,10 @@ func (dm *DocumentManager) AddAndParse(vscURI, content string) error {
 	dm.documentStates[docURI] = docState
 	dm.mu.Unlock()
 
-	return dm.ReParse(docURI, ddperror.EmptyHandler)
+	return dm.reParse(docURI, docState.newErrorCollector())
 }
 
-func (dm *DocumentManager) ReParse(docUri uri.URI, errHndl ddperror.Handler) error {
+func (dm *DocumentManager) reParse(docUri uri.URI, errHndl ddperror.Handler) error {
 	dm.mu.RLock()
 	defer dm.mu.RUnlock()
 
@@ -107,7 +115,7 @@ func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
 				// it was not being parsed, so we unlock the mutex
 				// which will be locked again by ReParse
 				doc.parseMutex.Unlock()
-				ok = dm.ReParse(doc.Uri, ddperror.EmptyHandler) == nil
+				ok = dm.reParse(doc.Uri, doc.newErrorCollector()) == nil
 			} else {
 				// if it is being currently reparsed we wait for it to finish
 				// by aquiring the mutex and then immediately unlock and return it

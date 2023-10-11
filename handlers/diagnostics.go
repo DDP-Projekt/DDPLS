@@ -34,6 +34,7 @@ func CreateSendDiagnostics() DiagnosticSender {
 			var (
 				docMod *ast.Module
 				docUri uri.URI
+				errs   []ddperror.Error
 			)
 			if doc, ok := dm.Get(vscURI); !ok {
 				log.Warningf("Could not retrieve document %s", vscURI)
@@ -41,16 +42,14 @@ func CreateSendDiagnostics() DiagnosticSender {
 			} else {
 				docMod = doc.Module
 				docUri = doc.Uri
+				errs = doc.LatestErrors
 			}
 			path := docUri.Filepath()
 
 			visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
 
-			if err := dm.ReParse(docUri, func(err ddperror.Error) {
-				visitor.add(err)
-			}); err != nil {
-				log.Errorf("parser error: %s", err)
-				return
+			for i := range errs {
+				visitor.add(errs[i])
 			}
 
 			ast.VisitModuleRec(docMod, visitor)

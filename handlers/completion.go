@@ -66,17 +66,26 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 		table := visitor.Table
 		varItems := make(map[string]protocol.CompletionItem)
-		aliases := make([]ast.FuncAlias, 0)
+		aliases := make([]ast.Alias, 0)
 		for table != nil {
 			for name := range table.Declarations {
 				if _, ok := varItems[name]; !ok {
-					if fnDecl, ok, isVar := table.LookupDecl(name); ok && isVar {
+					if decl, ok, isVar := table.LookupDecl(name); ok && isVar {
 						varItems[name] = protocol.CompletionItem{
 							Kind:  ptr(protocol.CompletionItemKindVariable),
 							Label: name,
 						}
-					} else if table.Enclosing == nil { // functions only in global scope
-						aliases = append(aliases, fnDecl.(*ast.FuncDecl).Aliases...)
+					} else {
+						switch decl := decl.(type) {
+						case *ast.FuncDecl:
+							for _, a := range decl.Aliases {
+								aliases = append(aliases, a)
+							}
+						case *ast.StructDecl:
+							for _, a := range decl.Aliases {
+								aliases = append(aliases, a)
+							}
+						}
 					}
 				}
 			}
@@ -146,8 +155,9 @@ var (
 	aliasRegex       = regexp.MustCompile(`<(\w+)>`)
 )
 
-func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
-	insertText := ast.TrimStringLit(&alias.Original) // remove the ""
+func aliasToCompletionItem(alias ast.Alias) protocol.CompletionItem {
+	orig := alias.GetOriginal()
+	insertText := ast.TrimStringLit(&orig) // remove the ""
 	details := insertText
 	insertTextMode := protocol.InsertTextFormatPlainText
 	if SupportsSnippets {
@@ -155,20 +165,20 @@ func aliasToCompletionItem(alias ast.FuncAlias) protocol.CompletionItem {
 		match_count := -1
 		insertText = aliasRegex.ReplaceAllStringFunc(insertText, func(b string) string {
 			match_count++
-			submatches := aliasRegex.FindAllStringSubmatch(insertText, len(alias.Args))
+			submatches := aliasRegex.FindAllStringSubmatch(insertText, len(alias.GetArgs()))
 			return fmt.Sprintf("${%d:%s}", match_count+1, submatches[match_count][1])
 		})
 	}
 
 	documentation := ""
-	if alias.Func.Comment != nil {
-		documentation = trimComment(alias.Func.Comment)
+	if comment := alias.Decl().Comment(); comment != nil {
+		documentation = trimComment(comment)
 	}
 
 	return protocol.CompletionItem{
 		Kind:             ptr(protocol.CompletionItemKindFunction),
 		Documentation:    documentation,
-		Label:            alias.Func.Name(),
+		Label:            alias.Decl().Name(),
 		InsertText:       &insertText,
 		InsertTextFormat: &insertTextMode,
 		Detail:           &details,

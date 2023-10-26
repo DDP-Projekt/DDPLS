@@ -38,10 +38,27 @@ type foldingVisitor struct {
 func (*foldingVisitor) BaseVisitor() {}
 
 func (fold *foldingVisitor) VisitBlockStmt(s *ast.BlockStmt) {
-	foldRange := protocol.FoldingRange{
+	fold.foldRanges = append(fold.foldRanges, protocol.FoldingRange{
 		StartLine: helper.ToProtocolRange(s.GetRange()).Start.Line,
 		EndLine:   helper.ToProtocolRange(s.GetRange()).End.Line,
-	}
+	})
+}
 
-	fold.foldRanges = append(fold.foldRanges, foldRange)
+func (fold *foldingVisitor) VisitStructDecl(d *ast.StructDecl) {
+	endRange := d.GetRange()
+	if len(d.Aliases) > 0 {
+		endRange = d.Aliases[0].Original.Range
+	}
+	fold.foldRanges = append(fold.foldRanges, protocol.FoldingRange{
+		StartLine: helper.ToProtocolRange(d.GetRange()).Start.Line,
+		EndLine:   helper.ToProtocolRange(endRange).Start.Line - 2,
+	})
+	if len(d.Aliases) > 0 {
+		startRange := d.Aliases[0].Original.Range
+		endRange := d.Aliases[len(d.Aliases)-1].Original.Range
+		fold.foldRanges = append(fold.foldRanges, protocol.FoldingRange{
+			StartLine: helper.ToProtocolRange(startRange).Start.Line - 1,
+			EndLine:   helper.ToProtocolRange(endRange).Start.Line,
+		})
+	}
 }

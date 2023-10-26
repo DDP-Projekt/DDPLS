@@ -6,6 +6,7 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
+	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 
@@ -31,6 +32,7 @@ func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protoco
 		ast.VisitAst(act.Module.Ast, tokenizer)
 
 		tokens := tokenizer.getTokens()
+		log.Infof("%v", tokens)
 		return tokens, nil
 	}
 }
@@ -55,6 +57,7 @@ func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocum
 		ast.VisitAst(act.Module.Ast, tokenizer)
 
 		tokens := tokenizer.getTokens()
+		log.Infof("%v", tokens)
 		return tokens, nil
 	}
 }
@@ -130,6 +133,17 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
 		t.add(newHightlightedToken(token.NewRange(&param, &param), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
 }
+func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) {
+	log.Infof("semantic struct")
+	/*for _, field := range d.Fields {
+		switch field := field.(type) {
+		case *ast.VarDecl:
+			t.VisitVarDecl(field)
+			t.VisitE
+		}
+	}*/
+	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeClass, nil))
+}
 
 func (t *semanticTokenizer) VisitIdent(e *ast.Ident) {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeVariable, nil))
@@ -148,6 +162,42 @@ func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) {
 }
 
 func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
+	rang := e.GetRange()
+	if len(e.Args) != 0 {
+		args := make([]ast.Expression, 0, len(e.Args))
+		for _, arg := range e.Args {
+			args = append(args, arg)
+		}
+		sort.Slice(args, func(i, j int) bool {
+			iRange, jRange := args[i].GetRange(), args[j].GetRange()
+			if iRange.Start.Line < jRange.Start.Line {
+				return true
+			}
+			if iRange.Start.Line == jRange.Start.Line {
+				return iRange.Start.Column < jRange.Start.Column
+			}
+			return false
+		})
+
+		for i, arg := range args {
+			argRange := arg.GetRange()
+			cutRange := helper.CutRangeOut(rang, argRange)
+			if helper.GetRangeLength(cutRange[0], t.doc) != 0 {
+				t.add(newHightlightedToken(cutRange[0], t.doc, protocol.SemanticTokenTypeFunction, nil))
+			}
+			ast.VisitNode(t, arg, nil)
+			rang = token.Range{Start: cutRange[1].Start, End: rang.End}
+
+			if i == len(e.Args)-1 && helper.GetRangeLength(cutRange[1], t.doc) != 0 {
+				t.add(newHightlightedToken(cutRange[1], t.doc, protocol.SemanticTokenTypeFunction, nil))
+			}
+		}
+	} else {
+		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
+	}
+}
+
+func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) {
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
 		args := make([]ast.Expression, 0, len(e.Args))

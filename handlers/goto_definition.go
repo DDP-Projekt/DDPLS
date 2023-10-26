@@ -58,8 +58,16 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) {
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) {
 	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
-			URI:   def.getUri(e.Func),
+			URI:   def.getUri(fun),
 			Range: helper.ToProtocolRange(fun.GetRange()),
+		}
+	}
+}
+func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) {
+	if struc, ok := e.Struct, e.Struct != nil; ok {
+		def.location = &protocol.Location{
+			URI:   def.getUri(struc),
+			Range: helper.ToProtocolRange(struc.GetRange()),
 		}
 	}
 }

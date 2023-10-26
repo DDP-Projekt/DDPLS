@@ -72,7 +72,7 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 		if decl.Mod.FileName != h.file {
 			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Mod.FileName))
 		}
-		comment := trimComment(decl.Comment)
+		comment := trimComment(decl.Comment())
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
 			Contents: protocol.MarkupContent{
@@ -138,13 +138,50 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 				body += h.docContent[start:end]
 			}
 		}
-		comment := trimComment(fun.Comment)
+		comment := trimComment(fun.Comment())
 
 		pRange := helper.ToProtocolRange(e.GetRange())
 		h.hover = &protocol.Hover{
 			Contents: protocol.MarkupContent{
 				Kind:  protocol.MarkupKindMarkdown,
 				Value: fmt.Sprintf("%s\n%s```ddp\n%s\n```", header, comment, body),
+			},
+			Range: &pRange,
+		}
+	}
+}
+
+func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) {
+	if decl, ok := e.Struct, e.Struct != nil; ok {
+		header := ""
+		if decl.Mod.FileName != h.file {
+			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Mod.FileName))
+		}
+		declRange := helper.ToProtocolRange(decl.GetRange())
+		body := ""
+		if file := decl.Mod.FileName; file != h.file {
+			header = h.getHoverFilePath(file) + "\n"
+
+			content, err := os.ReadFile(file)
+			if err != nil {
+				log.Errorf("Unable to read %s: %s", file, err)
+			}
+			start, end := declRange.IndexesIn(string(content))
+
+			body = string(content[start:end])
+		} else {
+			start, end := declRange.IndexesIn(h.docContent)
+			body = h.docContent[start:end]
+		}
+
+		comment := trimComment(decl.Comment())
+		pRange := helper.ToProtocolRange(e.GetRange())
+		h.hover = &protocol.Hover{
+			Contents: protocol.MarkupContent{
+				Kind: protocol.MarkupKindMarkdown,
+				Value: fmt.Sprintf(
+					"%s%s```ddp\n%s\n```", header, comment, body,
+				),
 			},
 			Range: &pRange,
 		}

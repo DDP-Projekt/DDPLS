@@ -1,3 +1,9 @@
+github.com/DDP-Projekt/Kompilierer v0.0.0-20230928151210-d9eecebafee9 h1:Z2yasd1Jsvxk007ykyM6HQH/nZPIe/lGEbgY4KTu0ig=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20230928151210-d9eecebafee9/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20231025081206-829824652423 h1:PDMUPVMHVlP/iFTvDiaajRWps1h47s6kxnAeILuo4QI=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20231025081206-829824652423/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20231025083745-64f272226a49 h1:uQp4Q58Hwk+lsSVNgAG+yk6Mq01fS8c4vhPLmtFlzVc=
+github.com/DDP-Projekt/Kompilierer v0.0.0-20231025083745-64f272226a49/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/DDP-Projekt/Kompilierer v0.0.8-pre.0.20231014084239-f215690bee7a h1:vGA+Y7EwF1MkJZKuQLf3X0wuUQ5B9Cz33G1LpEH3IDQ=
 github.com/DDP-Projekt/Kompilierer v0.0.8-pre.0.20231014084239-f215690bee7a/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=

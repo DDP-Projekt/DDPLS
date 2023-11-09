@@ -6,6 +6,8 @@ github.com/DDP-Projekt/Kompilierer v0.0.0-20231025083745-64f272226a49 h1:uQp4Q58
 github.com/DDP-Projekt/Kompilierer v0.0.0-20231025083745-64f272226a49/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/DDP-Projekt/Kompilierer v0.0.1-alpha.0.20231107184132-5bc08a3b4e45 h1:Iqf+U8hU1l4g3jfijGrSQdf/ZkhxPXYBsHhhM0ioUmE=
 github.com/DDP-Projekt/Kompilierer v0.0.1-alpha.0.20231107184132-5bc08a3b4e45/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
+github.com/DDP-Projekt/Kompilierer v0.0.1-alpha.0.20231109090912-ba1e34588fe4 h1:S0Mcom705PyU8efly827BdtnR6pBpD50cQAR2IskE4I=
+github.com/DDP-Projekt/Kompilierer v0.0.1-alpha.0.20231109090912-ba1e34588fe4/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/DDP-Projekt/Kompilierer v0.0.8-pre.0.20231014084239-f215690bee7a h1:vGA+Y7EwF1MkJZKuQLf3X0wuUQ5B9Cz33G1LpEH3IDQ=
 github.com/DDP-Projekt/Kompilierer v0.0.8-pre.0.20231014084239-f215690bee7a/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=

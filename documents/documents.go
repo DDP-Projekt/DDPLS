@@ -2,14 +2,40 @@ package documents
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 
 	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
+	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 )
+
+var preparsed_duden map[string]*ast.Module
+
+func init() {
+	preparsed_duden = make(map[string]*ast.Module)
+	filepath.WalkDir(ddppath.Duden, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) != ".ddp" {
+			return nil
+		}
+		mod, err := parser.Parse(parser.Options{
+			FileName: path,
+			Modules:  preparsed_duden,
+		})
+		if err != nil {
+			return err
+		}
+		preparsed_duden[mod.FileName] = mod
+		return nil
+	})
+}
 
 // represents the state of a single document
 type DocumentState struct {
@@ -19,7 +45,6 @@ type DocumentState struct {
 	Module       *ast.Module      // the corresponding ddp module
 	NeedReparse  atomic.Bool      // whether the document needs to be reparsed
 	LatestErrors []ddperror.Error // the errors from the last parsing
-	parseMutex   sync.Mutex       // the mutex used for parsing
 }
 
 func (d *DocumentState) newErrorCollector() ddperror.Handler {
@@ -30,41 +55,26 @@ func (d *DocumentState) newErrorCollector() ddperror.Handler {
 }
 
 func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
-	d.parseMutex.Lock()
-	defer d.parseMutex.Unlock()
-
 	d.Module, err = parser.Parse(parser.Options{
 		FileName:     d.Path,
 		Source:       []byte(d.Content),
-		Modules:      modules,
+		Modules:      merge_map_into(preparsed_duden, modules),
 		ErrorHandler: errorHandler,
 	})
 	d.NeedReparse.Store(false)
-
-	// cache all imports (like Duden modules etc.)
-	if err == nil {
-		for _, imprt := range d.Module.Imports {
-			if imprt.Module != nil {
-				imprt_uri := uri.FromPath(imprt.Module.FileName)
-				if _, ok := modules[imprt_uri.Filepath()]; !ok {
-					modules[imprt_uri.Filepath()] = imprt.Module
-				}
-			}
-		}
-	}
 
 	return err
 }
 
 // a synced map that manages document states
 type DocumentManager struct {
-	mu             sync.RWMutex
+	mu             sync.Mutex
 	documentStates map[uri.URI]*DocumentState
 }
 
 func NewDocumentManager() *DocumentManager {
 	return &DocumentManager{
-		mu:             sync.RWMutex{},
+		mu:             sync.Mutex{},
 		documentStates: make(map[uri.URI]*DocumentState),
 	}
 }
@@ -79,19 +89,16 @@ func (dm *DocumentManager) AddAndParse(vscURI, content string) error {
 		Path:    docURI.Filepath(),
 	}
 	dm.mu.Lock()
+	defer dm.mu.Unlock()
 	dm.documentStates[docURI] = docState
-	dm.mu.Unlock()
 
 	return dm.reParse(docURI, docState.newErrorCollector())
 }
 
 func (dm *DocumentManager) reParse(docUri uri.URI, errHndl ddperror.Handler) error {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
-
 	doc, ok := dm.documentStates[docUri]
 	if !ok {
-		return fmt.Errorf("Document %s not found in map", docUri)
+		return fmt.Errorf("document %s not found in map", docUri)
 	}
 
 	modules := map[string]*ast.Module{}
@@ -105,33 +112,22 @@ func (dm *DocumentManager) reParse(docUri uri.URI, errHndl ddperror.Handler) err
 }
 
 func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
 	doc, ok := dm.documentStates[uri.FromURI(vscURI)]
-	if ok {
-		if doc.NeedReparse.Load() {
-			// check if doc is currently being reparsed by trying to aquire the mutex
-			if doc.parseMutex.TryLock() {
-				// it was not being parsed, so we unlock the mutex
-				// which will be locked again by ReParse
-				doc.parseMutex.Unlock()
-				ok = dm.reParse(doc.Uri, doc.newErrorCollector()) == nil
-			} else {
-				// if it is being currently reparsed we wait for it to finish
-				// by aquiring the mutex and then immediately unlock and return it
-				doc.parseMutex.Lock()
-				doc.parseMutex.Unlock()
-			}
-		}
-		return doc, ok
-	} else {
+	if !ok {
 		return nil, ok
 	}
+
+	if doc.NeedReparse.Load() {
+		ok = dm.reParse(doc.Uri, doc.newErrorCollector()) == nil
+	}
+	return doc, ok
 }
 
 func (dm *DocumentManager) GetFromMod(mod *ast.Module) (*DocumentState, bool) {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
+	dm.mu.Lock()
+	defer dm.mu.Unlock()
 	for _, v := range dm.documentStates {
 		if v.Module == mod {
 			return v, true
@@ -144,4 +140,12 @@ func (dm *DocumentManager) Delete(vscURI string) {
 	dm.mu.Lock()
 	defer dm.mu.Unlock()
 	delete(dm.documentStates, uri.FromURI(vscURI))
+}
+
+// merges a into b and returns b
+func merge_map_into[K comparable, V any](a, b map[K]V) map[K]V {
+	for k, v := range a {
+		b[k] = v
+	}
+	return b
 }

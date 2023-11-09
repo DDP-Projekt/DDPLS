@@ -6,7 +6,6 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
-	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 
@@ -32,7 +31,6 @@ func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protoco
 		ast.VisitAst(act.Module.Ast, tokenizer)
 
 		tokens := tokenizer.getTokens()
-		log.Infof("%v", tokens)
 		return tokens, nil
 	}
 }
@@ -57,7 +55,6 @@ func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocum
 		ast.VisitAst(act.Module.Ast, tokenizer)
 
 		tokens := tokenizer.getTokens()
-		log.Infof("%v", tokens)
 		return tokens, nil
 	}
 }
@@ -134,7 +131,6 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
 	}
 }
 func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) {
-	log.Infof("semantic struct")
 	/*for _, field := range d.Fields {
 		switch field := field.(type) {
 		case *ast.VarDecl:

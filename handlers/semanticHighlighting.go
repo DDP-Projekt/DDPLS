@@ -135,15 +135,14 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	return ast.VisitRecurse
 }
 func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
-	/*for _, field := range d.Fields {
+	for _, field := range d.Fields {
 		switch field := field.(type) {
 		case *ast.VarDecl:
-			t.VisitVarDecl(field)
-			t.VisitE
+			ast.VisitNode(t, field, nil)
 		}
-	}*/
+	}
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeClass, nil))
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
 func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.VisitResult {
@@ -201,7 +200,7 @@ func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	} else {
 		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
 func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
@@ -238,7 +237,7 @@ func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) ast.VisitRe
 	} else {
 		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
 	}
-	return ast.VisitRecurse
+	return ast.VisitSkipChildren
 }
 
 func (t *semanticTokenizer) VisitImportStmt(e *ast.ImportStmt) ast.VisitResult {

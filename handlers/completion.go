@@ -244,6 +244,8 @@ type tableVisitor struct {
 	file  string
 }
 
+var _ ast.BaseVisitor = (*tableVisitor)(nil)
+
 func (*tableVisitor) BaseVisitor() {}
 
 func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
@@ -275,7 +277,7 @@ func (vis *importVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), vis.pos)
 }
 
-func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
+func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult {
 	if helper.IsInRange(imprt.FileName.Range, protocol.Position(vis.pos)) {
 		// clear the items, because we want no keywords and variables if we
 		// are in an import path
@@ -295,7 +297,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
 		entries, err := os.ReadDir(searchPath)
 		if err != nil {
 			log.Warningf("unable to read incomplete import Path dir: %s", err)
-			return
+			return ast.VisitRecurse
 		}
 
 		modFile := filepath.Base(vis.modPath)
@@ -315,7 +317,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
 	}
 	// module could not be parsed yet, return
 	if imprt.Module == nil {
-		return
+		return ast.VisitRecurse
 	}
 
 	// module could be parsed, complete symbol imports
@@ -337,6 +339,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) {
 		}
 		break
 	}
+	return ast.VisitRecurse
 }
 
 func pathToCompletionItem(path string) protocol.CompletionItem {

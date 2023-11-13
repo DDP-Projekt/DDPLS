@@ -94,6 +94,8 @@ type semanticTokenizer struct {
 	shouldVisitFunc func(node ast.Node) bool
 }
 
+var _ ast.BaseVisitor = (*semanticTokenizer)(nil)
+
 func (t *semanticTokenizer) ShouldVisit(node ast.Node) bool {
 	if t.shouldVisitFunc != nil {
 		return t.shouldVisitFunc(node)
@@ -121,16 +123,18 @@ func (t *semanticTokenizer) add(tok highlightedToken) {
 	t.tokens = append(t.tokens, tok)
 }
 
-func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) {
+func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) {
+func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	for _, param := range d.ParamNames {
 		t.add(newHightlightedToken(token.NewRange(&param, &param), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) {
+func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 	/*for _, field := range d.Fields {
 		switch field := field.(type) {
 		case *ast.VarDecl:
@@ -139,25 +143,31 @@ func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) {
 		}
 	}*/
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeClass, nil))
+	return ast.VisitRecurse
 }
 
-func (t *semanticTokenizer) VisitIdent(e *ast.Ident) {
+func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeVariable, nil))
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) {
+func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) {
+func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) {
+func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	return ast.VisitRecurse
 }
-func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) {
+func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	return ast.VisitRecurse
 }
 
-func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
+func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
 		args := make([]ast.Expression, 0, len(e.Args))
@@ -191,9 +201,10 @@ func (t *semanticTokenizer) VisitFuncCall(e *ast.FuncCall) {
 	} else {
 		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
 	}
+	return ast.VisitRecurse
 }
 
-func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) {
+func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
 	rang := e.GetRange()
 	if len(e.Args) != 0 {
 		args := make([]ast.Expression, 0, len(e.Args))
@@ -227,10 +238,12 @@ func (t *semanticTokenizer) VisitStructLiteral(e *ast.StructLiteral) {
 	} else {
 		t.add(newHightlightedToken(rang, t.doc, protocol.SemanticTokenTypeFunction, nil))
 	}
+	return ast.VisitRecurse
 }
 
-func (t *semanticTokenizer) VisitImportStmt(e *ast.ImportStmt) {
+func (t *semanticTokenizer) VisitImportStmt(e *ast.ImportStmt) ast.VisitResult {
 	t.add(newHightlightedToken(e.FileName.Range, t.doc, protocol.SemanticTokenTypeString, nil))
+	return ast.VisitRecurse
 }
 
 func newHightlightedToken(rang token.Range, doc *documents.DocumentState, tokType protocol.SemanticTokenType, modifiers []protocol.SemanticTokenModifier) highlightedToken {

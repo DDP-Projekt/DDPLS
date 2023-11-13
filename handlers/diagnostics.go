@@ -67,6 +67,8 @@ type diagnosticVisitor struct {
 	diagnostics []protocol.Diagnostic
 }
 
+var _ ast.BaseVisitor = (*diagnosticVisitor)(nil)
+
 func (d *diagnosticVisitor) add(err ddperror.Error) {
 	diagnostic := protocol.Diagnostic{
 		Range:    helper.ToProtocolRange(err.Range),
@@ -88,14 +90,17 @@ var (
 
 func (*diagnosticVisitor) BaseVisitor() {}
 
-func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) {
+func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
 		d.add(decl.Err)
 	}
+	return ast.VisitRecurse
 }
-func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) {
+func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 	d.add(e.Err)
+	return ast.VisitRecurse
 }
-func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) {
+func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) ast.VisitResult {
 	d.add(s.Err)
+	return ast.VisitRecurse
 }

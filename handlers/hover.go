@@ -56,6 +56,8 @@ type hoverVisitor struct {
 	file           string
 }
 
+var _ ast.BaseVisitor = (*hoverVisitor)(nil)
+
 func (*hoverVisitor) BaseVisitor() {}
 
 func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
@@ -66,7 +68,7 @@ func (h *hoverVisitor) UpdateScope(symbols *ast.SymbolTable) {
 	h.currentSymbols = symbols
 }
 
-func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
+func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		header := ""
 		if decl.Mod.FileName != h.file {
@@ -84,12 +86,13 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) {
 			Range: &pRange,
 		}
 	}
+	return ast.VisitBreak
 }
-func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
+func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {
 			if helper.IsInRange(expr.GetRange(), h.pos) {
-				return
+				return ast.VisitRecurse
 			}
 		}
 	}
@@ -149,9 +152,17 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) {
 			Range: &pRange,
 		}
 	}
+	return ast.VisitBreak
 }
 
-func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) {
+func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
+	if len(e.Args) != 0 {
+		for _, expr := range e.Args {
+			if helper.IsInRange(expr.GetRange(), h.pos) {
+				return ast.VisitRecurse
+			}
+		}
+	}
 	if decl, ok := e.Struct, e.Struct != nil; ok {
 		header := ""
 		if decl.Mod.FileName != h.file {
@@ -186,6 +197,7 @@ func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) {
 			Range: &pRange,
 		}
 	}
+	return ast.VisitBreak
 }
 
 // helper to get a nice-looking path to display in a hover

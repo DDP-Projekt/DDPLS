@@ -8,7 +8,7 @@ import (
 	lspserver "github.com/tliron/glsp/server"
 
 	// Must include a backend implementation. See kutil's logging/ for other options.
-	_ "github.com/tliron/kutil/logging/simple"
+	_ "github.com/tliron/commonlog/simple"
 )
 
 const (

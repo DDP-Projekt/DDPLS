@@ -7,10 +7,10 @@ import (
 
 	"github.com/DDP-Projekt/DDPLS/ddpls"
 	"github.com/DDP-Projekt/DDPLS/log"
-	"github.com/tliron/kutil/logging"
+	logging "github.com/tliron/commonlog"
 
 	// Must include a backend implementation. See kutil's logging/ for other options.
-	_ "github.com/tliron/kutil/logging/simple"
+	_ "github.com/tliron/commonlog/simple"
 )
 
 func main() {

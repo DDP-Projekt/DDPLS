@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/tliron/kutil/logging"
+	logging "github.com/tliron/commonlog"
 )
 
 func fmtWithCaller(format string) string {

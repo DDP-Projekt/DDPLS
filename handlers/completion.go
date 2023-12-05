@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -15,7 +14,6 @@ import (
 	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
-	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -31,28 +29,10 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 			})
 		}
 
-		// boolean to signify if the next keyword completion should have it's first character Capitalized
-		shouldCapitalize := false
 		var docModule *ast.Module
 		// Get the current Document
 		if d, ok := dm.Get(params.TextDocument.URI); ok {
-			index := params.Position.IndexIn(d.Content) // The index of the cursor
-			shouldCapitalize = decideCapitalization(index, d.Content)
 			docModule = d.Module
-		}
-
-		for _, s := range ddpKeywords {
-			// Capitalize the first character of the string if it's the start of a sentence
-			if shouldCapitalize {
-				runes := []rune(s)
-				runes[0] = unicode.ToUpper(runes[0])
-				s = string(runes)
-			}
-
-			items = append(items, protocol.CompletionItem{
-				Kind:  ptr(protocol.CompletionItemKindKeyword),
-				Label: s,
-			})
 		}
 
 		currentAst := docModule.Ast
@@ -98,7 +78,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		}
 
 		for _, alias := range aliases {
-			items = append(items, aliasToCompletionItem(alias))
+			items = append(items, aliasToCompletionItem(alias)...)
 		}
 
 		// must be here at the end because it might clear previous items
@@ -155,7 +135,7 @@ var (
 	aliasRegex       = regexp.MustCompile(`<(\w+)>`)
 )
 
-func aliasToCompletionItem(alias ast.Alias) protocol.CompletionItem {
+func aliasToCompletionItem(alias ast.Alias) []protocol.CompletionItem {
 	orig := alias.GetOriginal()
 	insertText := ast.TrimStringLit(&orig) // remove the ""
 	details := insertText
@@ -175,14 +155,26 @@ func aliasToCompletionItem(alias ast.Alias) protocol.CompletionItem {
 		documentation = trimComment(comment)
 	}
 
-	return protocol.CompletionItem{
-		Kind:             ptr(protocol.CompletionItemKindFunction),
-		Documentation:    documentation,
-		Label:            alias.Decl().Name(),
-		InsertText:       &insertText,
-		InsertTextFormat: &insertTextMode,
-		Detail:           &details,
-		FilterText:       &insertText,
+	name := alias.Decl().Name()
+	return []protocol.CompletionItem{
+		{
+			Kind:             ptr(protocol.CompletionItemKindFunction),
+			Documentation:    documentation,
+			Label:            name,
+			InsertText:       &insertText,
+			InsertTextFormat: &insertTextMode,
+			Detail:           &details,
+			FilterText:       &insertText,
+		},
+		{
+			Kind:             ptr(protocol.CompletionItemKindFunction),
+			Documentation:    documentation,
+			Label:            name,
+			InsertText:       &insertText,
+			InsertTextFormat: &insertTextMode,
+			Detail:           &details,
+			FilterText:       &name,
+		},
 	}
 }
 
@@ -203,8 +195,7 @@ var (
 		"Text Liste",
 		"Buchstaben Liste",
 	}
-	ddpKeywords = make([]string, 0, len(token.KeywordMap))
-	dudenPaths  = make([]string, 0)
+	dudenPaths = make([]string, 0)
 )
 
 func getRelevantEntryName(entry fs.DirEntry) string {
@@ -221,11 +212,6 @@ func getRelevantEntryName(entry fs.DirEntry) string {
 
 // initialize the ddp-keywords
 func init() {
-	for k := range token.KeywordMap {
-		if !helper.Contains(ddpTypes, k) {
-			ddpKeywords = append(ddpKeywords, k)
-		}
-	}
 	dudenEntries, err := os.ReadDir(ddppath.Duden)
 	if err != nil {
 		log.Warningf("Unable to read Duden-Dir: %s", err)

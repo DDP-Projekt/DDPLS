@@ -3,7 +3,7 @@ module github.com/DDP-Projekt/DDPLS
 go 1.21
 
 require (
-	github.com/DDP-Projekt/Kompilierer v0.1.0-alpha.0.20231204192905-7f9b0948acb0
+	github.com/DDP-Projekt/Kompilierer v0.1.0-alpha.0.20231205192352-367729ec8f20
 	github.com/tliron/commonlog v0.2.8
 	github.com/tliron/glsp v0.2.1
 )

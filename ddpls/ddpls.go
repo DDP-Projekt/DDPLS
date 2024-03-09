@@ -43,6 +43,8 @@ func NewDDPLS() *DDPLS {
 		TextDocumentHover:               handlers.CreateTextDocumentHover(ls.dm),
 		TextDocumentDefinition:          handlers.CreateTextDocumentDefinition(ls.dm),
 		TextDocumentFoldingRange:        handlers.CreateTextDocumentFoldingRange(ls.dm),
+		TextDocumentRename:              handlers.CreateTextDocumentRename(ls.dm),
+		TextDocumentPrepareRename:       handlers.CreateTextDocumentPrepareRename(ls.dm),
 	}
 	ls.Server = lspserver.NewServer(&ls.handler, lsName, false)
 	return ls
@@ -70,6 +72,10 @@ func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
 				"\"",
 				"/",
 			},
+		}
+		temp := true
+		capabilities.RenameProvider = &protocol.RenameOptions{
+			PrepareProvider: &temp,
 		}
 		version := version
 		return protocol.InitializeResult{

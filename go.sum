@@ -2,6 +2,8 @@ github.com/DDP-Projekt/Kompilierer v0.2.0-alpha h1:f5V4/vGhppirVrInM0OejJ4yFB8e4
 github.com/DDP-Projekt/Kompilierer v0.2.0-alpha/go.mod h1:OVRSCZNQ8LVV8ZH5TuAGTaf0skO06bgV5Y7Wgvdb+NY=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
+github.com/bafto/glsp v0.1.2-0.20240309133542-c3c28efe94bf h1:fceaXvSBUjpDV5rPJVNLoBADehz/ZjffYCzMTkq5sRM=
+github.com/bafto/glsp v0.1.2-0.20240309133542-c3c28efe94bf/go.mod h1:GMVWDNeODxHzmDPvYbYTCs7yHVaEATfYtXiYJ9w1nBg=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/QY=
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
@@ -31,8 +33,6 @@ github.com/sourcegraph/jsonrpc2 v0.2.0 h1:KjN/dC4fP6aN9030MZCJs9WQbTOjWHhrtKVpzz
 github.com/sourcegraph/jsonrpc2 v0.2.0/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=
 github.com/tliron/commonlog v0.2.8 h1:vpKrEsZX4nlneC9673pXpeKqv3cFLxwpzNEZF1qiaQQ=
 github.com/tliron/commonlog v0.2.8/go.mod h1:HgQZrJEuiKLLRvUixtPWGcmTmWWtKkCtywF6x9X5Spw=
-github.com/tliron/glsp v0.2.1 h1:QS1c22YO1EiY0YZmJXca4Eq13gP0HX2vgy2t38gLNJ0=
-github.com/tliron/glsp v0.2.1/go.mod h1:GMVWDNeODxHzmDPvYbYTCs7yHVaEATfYtXiYJ9w1nBg=
 github.com/tliron/kutil v0.3.13 h1:hB2k7zWYhuuQ8pqJ6Gu/LxDw8UUnjBlhBbwUt5rUiSs=
 github.com/tliron/kutil v0.3.13/go.mod h1:sazY84VhpRez9rFf6ajtZBdpThJ/OIVL7Mue6GC/rds=
 golang.org/x/crypto v0.16.0 h1:mMMrFzRSCF0GvB7Ne27XVtVAaXLrPmgPC7/v0tkwHaY=

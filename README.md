@@ -4,13 +4,17 @@ Mit einem Language Server ist es möglich IDE's zu erweitern, um DDP zu unterst�
 
 ## Features
 <!-- TOC -->
-* [Syntax highlighting](#syntax-highlighting)
-* [Diagnose Informationen](#diagnose-informationen)
-* [Hover](#hover)
-    * [Über einer Variable](#über-einer-variable)
-    * [Über einem Funktionsaufruf](#über-einem-funktionsaufruf)
-* [Go to definition und Peek definition](#go-to-definition-und-peek-definition)
-* [Vorschläge](#vorschläge)
+- [DDPLS](#ddpls)
+	- [Features](#features)
+		- [Syntax highlighting](#syntax-highlighting)
+		- [Diagnose Informationen](#diagnose-informationen)
+		- [Hover](#hover)
+			- [Über einer Variable](#über-einer-variable)
+			- [Über einem Funktionsaufruf](#über-einem-funktionsaufruf)
+		- [Go to definition und Peek definition](#go-to-definition-und-peek-definition)
+		- [Vorschläge](#vorschläge)
+		- [Umbennenen](#umbennenen)
+		- [Variablen Hervorhebung](#variablen-hervorhebung)
 <!-- TOC -->
 
 ### Syntax highlighting
@@ -39,3 +43,11 @@ Peek definition erlaubt dem Nutzer schnell eine Variablen- oder Funktionsdeklara
 ### Vorschläge
 Während dem Tippen kann der Language Server dir Vorschläge für Schlüsselwörter, Typen, Funktionen und Variablen geben.
 ![completion img](https://i.imgur.com/HbjB9pQ.png)
+
+### Umbennenen
+Man kann Variablen, Funktionsparameter und Kombinationsparameter umbennen.
+![rename](https://i.imgur.com/ezaTUBv.png)
+
+### Variablen Hervorhebung
+Variablen und Parameter werden hervorgehoben wenn die Maus neben ihr liegt
+![highlight](https://i.imgur.com/h5rs2ye.png)

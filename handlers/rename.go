@@ -68,9 +68,43 @@ func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		}
 	}
 
+	for _, alias := range d.Aliases {
+		for _, tokens := range alias.Tokens {
+			if helper.IsInRange(tokens.Range, r.pos) {
+				decl, _, _ := d.Body.Symbols.LookupDecl(tokens.Literal[1 : len(tokens.Literal)-1])
+				r.decl = decl
+				return ast.VisitBreak
+			}
+		}
+	}
+
 	if helper.IsInRange(d.NameTok.Range, r.pos) {
 		r.decl = d
 		return ast.VisitBreak
+	}
+
+	return ast.VisitRecurse
+}
+
+func (r *renamePreparer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
+	for _, field := range d.Fields {
+		if helper.IsInRange(field.GetRange(), r.pos) {
+			r.decl = field
+			return ast.VisitBreak
+		}
+
+		for _, alias := range d.Aliases {
+			for _, tokens := range alias.Tokens {
+				if !(tokens.Type == token.ALIAS_PARAMETER && tokens.Literal == "<"+field.Name()+">") {
+					continue
+				}
+
+				if helper.IsInRange(tokens.Range, r.pos) {
+					r.decl = field
+					return ast.VisitBreak
+				}
+			}
+		}
 	}
 
 	return ast.VisitRecurse
@@ -170,19 +204,13 @@ func (r *renamer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 			})
 
 			for _, alias := range d.Aliases {
-				for _, tokens := range alias.Tokens {
-					if !(tokens.Type == token.ALIAS_PARAMETER && tokens.Literal == "<"+decl.Name()+">") {
+				for _, aliasToken := range alias.Tokens {
+					if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+decl.Name()+">") {
 						continue
 					}
 
 					r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
-						Range: helper.ToProtocolRange(token.Range{
-							Start: token.Position{
-								Line:   tokens.Range.Start.Line,
-								Column: tokens.Range.Start.Column + 2,
-							},
-							End: tokens.Range.End,
-						}),
+						Range:   helper.ToProtocolRange(getAliasRange(aliasToken)),
 						NewText: r.newName,
 					})
 				}
@@ -191,4 +219,37 @@ func (r *renamer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	}
 
 	return ast.VisitRecurse
+}
+
+func (r *renamer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
+	for _, field := range d.Fields {
+		if r.decl != field {
+			continue
+		}
+
+		for _, alias := range d.Aliases {
+			for _, aliasToken := range alias.Tokens {
+				if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+field.Name()+">") {
+					continue
+				}
+
+				r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
+					Range:   helper.ToProtocolRange(getAliasRange(aliasToken)),
+					NewText: r.newName,
+				})
+			}
+		}
+	}
+
+	return ast.VisitRecurse
+}
+
+func getAliasRange(aliasToken token.Token) token.Range {
+	return token.Range{
+		Start: token.Position{
+			Line:   aliasToken.Range.Start.Line,
+			Column: aliasToken.Range.Start.Column + 2,
+		},
+		End: aliasToken.Range.End,
+	}
 }

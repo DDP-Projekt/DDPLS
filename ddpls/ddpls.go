@@ -45,6 +45,7 @@ func NewDDPLS() *DDPLS {
 		TextDocumentFoldingRange:        handlers.CreateTextDocumentFoldingRange(ls.dm),
 		TextDocumentRename:              handlers.CreateTextDocumentRename(ls.dm),
 		TextDocumentPrepareRename:       handlers.CreateTextDocumentPrepareRename(ls.dm),
+		TextDocumentDocumentHighlight:   handlers.CreateTextDocumentDocumentHighlight(ls.dm),
 	}
 	ls.Server = lspserver.NewServer(&ls.handler, lsName, false)
 	return ls
@@ -76,6 +77,9 @@ func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
 		temp := true
 		capabilities.RenameProvider = &protocol.RenameOptions{
 			PrepareProvider: &temp,
+		}
+		capabilities.DocumentHighlightProvider = &protocol.DocumentHighlightOptions{
+			WorkDoneProgressOptions: protocol.WorkDoneProgressOptions{WorkDoneProgress: &temp},
 		}
 		version := version
 		return protocol.InitializeResult{

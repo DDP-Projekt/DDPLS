@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/DDP-Projekt/Kompilierer v0.2.0-alpha
 	github.com/tliron/commonlog v0.2.8
-	github.com/tliron/glsp v0.2.1
+	github.com/tliron/glsp v0.2.2-0.20240309182338-ab78d718ad7d
 )
 
 require (
@@ -28,5 +28,3 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 )
-
-replace github.com/tliron/glsp => github.com/bafto/glsp v0.1.2-0.20240309133542-c3c28efe94bf

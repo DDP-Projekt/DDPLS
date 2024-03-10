@@ -6,12 +6,9 @@ import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
-
-var kind = protocol.DocumentHighlightKindText
 
 func CreateTextDocumentDocumentHighlight(dm *documents.DocumentManager) protocol.TextDocumentDocumentHighlightFunc {
 	return func(context *glsp.Context, params *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
@@ -52,7 +49,6 @@ func (r *highlighter) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if r.decl == d {
 		r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
 			Range: helper.ToProtocolRange(d.NameTok.Range),
-			Kind:  &kind,
 		})
 	}
 
@@ -68,7 +64,6 @@ func (r *highlighter) VisitIdent(d *ast.Ident) ast.VisitResult {
 	if r.decl == d.Declaration {
 		r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
 			Range: helper.ToProtocolRange(d.GetRange()),
-			Kind:  &kind,
 		})
 	}
 
@@ -87,8 +82,7 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 				if d.Body == nil {
 					return ast.VisitRecurse
 				}
-				decl, _, _ := d.Body.Symbols.LookupDecl(name.Literal)
-				r.decl = decl
+				r.decl, _, _ = d.Body.Symbols.LookupDecl(name.Literal)
 				return ast.VisitBreak
 			}
 		}
@@ -96,8 +90,7 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		for _, alias := range d.Aliases {
 			for _, aliasTokens := range alias.Tokens {
 				if helper.IsInRange(aliasTokens.Range, r.pos) {
-					decl, _, _ := d.Body.Symbols.LookupDecl(aliasTokens.Literal[1 : len(aliasTokens.Literal)-1])
-					r.decl = decl
+					r.decl, _, _ = d.Body.Symbols.LookupDecl(aliasTokens.Literal[1 : len(aliasTokens.Literal)-1])
 					return ast.VisitBreak
 				}
 			}
@@ -107,7 +100,6 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	if r.decl == d {
 		r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
 			Range: helper.ToProtocolRange(d.NameTok.Range),
-			Kind:  &kind,
 		})
 	}
 
@@ -123,24 +115,16 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 
 		r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
 			Range: helper.ToProtocolRange(decl.GetRange()),
-			Kind:  &kind,
 		})
 
 		for _, alias := range d.Aliases {
 			for _, aliasToken := range alias.Tokens {
-				if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+decl.Name()+">") {
+				if !helper.AliasParamNameEquals(aliasToken, decl.Name()) {
 					continue
 				}
 
 				r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
-					Range: helper.ToProtocolRange(token.Range{
-						Start: token.Position{
-							Line:   aliasToken.Range.Start.Line,
-							Column: aliasToken.Range.Start.Column + 2,
-						},
-						End: aliasToken.Range.End,
-					}),
-					Kind: &kind,
+					Range: helper.GetAliasParamProtocolRange(aliasToken),
 				})
 			}
 		}
@@ -158,12 +142,12 @@ func (r *highlighter) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 			}
 
 			for _, alias := range d.Aliases {
-				for _, tokens := range alias.Tokens {
-					if !(tokens.Type == token.ALIAS_PARAMETER && tokens.Literal == "<"+field.Name()+">") {
+				for _, aliasToken := range alias.Tokens {
+					if !helper.AliasParamNameEquals(aliasToken, field.Name()) {
 						continue
 					}
 
-					if helper.IsInRange(tokens.Range, r.pos) {
+					if helper.IsInRange(aliasToken.Range, r.pos) {
 						r.decl = field
 						return ast.VisitBreak
 					}
@@ -179,18 +163,12 @@ func (r *highlighter) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 
 		for _, alias := range d.Aliases {
 			for _, aliasToken := range alias.Tokens {
-				if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+field.Name()+">") {
+				if !helper.AliasParamNameEquals(aliasToken, field.Name()) {
 					continue
 				}
 
 				r.highlightList = append(r.highlightList, protocol.DocumentHighlight{
-					Range: helper.ToProtocolRange(token.Range{
-						Start: token.Position{
-							Line:   aliasToken.Range.Start.Line,
-							Column: aliasToken.Range.Start.Column + 2,
-						},
-						End: aliasToken.Range.End,
-					}),
+					Range: helper.GetAliasParamProtocolRange(aliasToken),
 				})
 			}
 		}

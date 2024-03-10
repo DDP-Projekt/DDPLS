@@ -7,7 +7,6 @@ import (
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -62,8 +61,7 @@ func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 			if d.Body == nil {
 				return ast.VisitRecurse
 			}
-			decl, _, _ := d.Body.Symbols.LookupDecl(name.Literal)
-			r.decl = decl
+			r.decl, _, _ = d.Body.Symbols.LookupDecl(name.Literal)
 			return ast.VisitBreak
 		}
 	}
@@ -71,8 +69,7 @@ func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	for _, alias := range d.Aliases {
 		for _, tokens := range alias.Tokens {
 			if helper.IsInRange(tokens.Range, r.pos) {
-				decl, _, _ := d.Body.Symbols.LookupDecl(tokens.Literal[1 : len(tokens.Literal)-1])
-				r.decl = decl
+				r.decl, _, _ = d.Body.Symbols.LookupDecl(tokens.Literal[1 : len(tokens.Literal)-1])
 				return ast.VisitBreak
 			}
 		}
@@ -94,12 +91,12 @@ func (r *renamePreparer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 		}
 
 		for _, alias := range d.Aliases {
-			for _, tokens := range alias.Tokens {
-				if !(tokens.Type == token.ALIAS_PARAMETER && tokens.Literal == "<"+field.Name()+">") {
+			for _, aliasToken := range alias.Tokens {
+				if !helper.AliasParamNameEquals(aliasToken, field.Name()) {
 					continue
 				}
 
-				if helper.IsInRange(tokens.Range, r.pos) {
+				if helper.IsInRange(aliasToken.Range, r.pos) {
 					r.decl = field
 					return ast.VisitBreak
 				}
@@ -205,12 +202,12 @@ func (r *renamer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 
 			for _, alias := range d.Aliases {
 				for _, aliasToken := range alias.Tokens {
-					if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+decl.Name()+">") {
+					if !helper.AliasParamNameEquals(aliasToken, decl.Name()) {
 						continue
 					}
 
 					r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
-						Range:   helper.ToProtocolRange(getAliasRange(aliasToken)),
+						Range:   helper.GetAliasParamProtocolRange(aliasToken),
 						NewText: r.newName,
 					})
 				}
@@ -229,12 +226,12 @@ func (r *renamer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 
 		for _, alias := range d.Aliases {
 			for _, aliasToken := range alias.Tokens {
-				if !(aliasToken.Type == token.ALIAS_PARAMETER && aliasToken.Literal == "<"+field.Name()+">") {
+				if !helper.AliasParamNameEquals(aliasToken, field.Name()) {
 					continue
 				}
 
 				r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
-					Range:   helper.ToProtocolRange(getAliasRange(aliasToken)),
+					Range:   helper.GetAliasParamProtocolRange(aliasToken),
 					NewText: r.newName,
 				})
 			}
@@ -242,14 +239,4 @@ func (r *renamer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 	}
 
 	return ast.VisitRecurse
-}
-
-func getAliasRange(aliasToken token.Token) token.Range {
-	return token.Range{
-		Start: token.Position{
-			Line:   aliasToken.Range.Start.Line,
-			Column: aliasToken.Range.Start.Column + 2,
-		},
-		End: aliasToken.Range.End,
-	}
 }

@@ -158,11 +158,11 @@ func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
 	return ast.VisitRecurse
 }
 func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.VisitResult {
-	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	//t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 	return ast.VisitRecurse
 }
 func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.VisitResult {
-	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	//t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 	return ast.VisitRecurse
 }
 

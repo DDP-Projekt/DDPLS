@@ -22,17 +22,17 @@ func CreateTextDocumentHover(dm *documents.DocumentManager) protocol.TextDocumen
 			hover: nil,
 			pos:   params.Position,
 		}
-		var docAst *ast.Ast
+		var docModule *ast.Module
 		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
 			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
 		} else {
 			hover.currentSymbols = doc.Module.Ast.Symbols
 			hover.file = doc.Module.FileName
 			hover.docContent = doc.Content
-			docAst = doc.Module.Ast
+			docModule = doc.Module
 		}
 
-		ast.VisitAst(docAst, hover)
+		ast.VisitModule(docModule, hover)
 
 		return hover.hover, nil
 	}
@@ -56,15 +56,19 @@ type hoverVisitor struct {
 	file           string
 }
 
-var _ ast.BaseVisitor = (*hoverVisitor)(nil)
+var (
+	_ ast.Visitor            = (*hoverVisitor)(nil)
+	_ ast.ConditionalVisitor = (*hoverVisitor)(nil)
+	_ ast.ScopeSetter        = (*hoverVisitor)(nil)
+)
 
-func (*hoverVisitor) BaseVisitor() {}
+func (*hoverVisitor) Visitor() {}
 
 func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), h.pos)
 }
 
-func (h *hoverVisitor) UpdateScope(symbols *ast.SymbolTable) {
+func (h *hoverVisitor) SetScope(symbols *ast.SymbolTable) {
 	h.currentSymbols = symbols
 }
 
@@ -88,6 +92,7 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 	}
 	return ast.VisitBreak
 }
+
 func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {

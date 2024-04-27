@@ -40,9 +40,12 @@ type definitionVisitor struct {
 	docUri   uri.URI
 }
 
-var _ ast.BaseVisitor = (*definitionVisitor)(nil)
+var (
+	_ ast.Visitor            = (*definitionVisitor)(nil)
+	_ ast.ConditionalVisitor = (*definitionVisitor)(nil)
+)
 
-func (*definitionVisitor) BaseVisitor() {}
+func (*definitionVisitor) Visitor() {}
 
 func (def *definitionVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), def.pos)
@@ -54,24 +57,29 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 			URI:   def.getUri(e.Declaration),
 			Range: helper.ToProtocolRange(decl.GetRange()),
 		}
+		return ast.VisitBreak
 	}
 	return ast.VisitRecurse
 }
+
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
 			URI:   def.getUri(fun),
 			Range: helper.ToProtocolRange(fun.GetRange()),
 		}
+		return ast.VisitBreak
 	}
 	return ast.VisitRecurse
 }
+
 func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
 	if struc, ok := e.Struct, e.Struct != nil; ok {
 		def.location = &protocol.Location{
 			URI:   def.getUri(struc),
 			Range: helper.ToProtocolRange(struc.GetRange()),
 		}
+		return ast.VisitBreak
 	}
 	return ast.VisitRecurse
 }

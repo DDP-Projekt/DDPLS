@@ -35,14 +35,11 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 			docModule = d.Module
 		}
 
-		currentAst := docModule.Ast
-
 		visitor := &tableVisitor{
-			Table: currentAst.Symbols,
+			Table: docModule.Ast.Symbols,
 			pos:   params.Position,
-			file:  docModule.FileName,
 		}
-		ast.VisitAst(currentAst, visitor)
+		ast.VisitModule(docModule, visitor)
 
 		table := visitor.Table
 		varItems := make(map[string]protocol.CompletionItem)
@@ -86,7 +83,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		if params.Context != nil {
 			triggerChar = params.Context.TriggerCharacter
 		}
-		ast.VisitAst(currentAst, &importVisitor{
+		ast.VisitModule(docModule, &importVisitor{
 			pos:         params.Position,
 			items:       &items,
 			modPath:     docModule.FileName,
@@ -227,22 +224,17 @@ func init() {
 type tableVisitor struct {
 	Table *ast.SymbolTable
 	pos   protocol.Position
-	file  string
 }
 
-var _ ast.BaseVisitor = (*tableVisitor)(nil)
+var (
+	_ ast.Visitor            = (*tableVisitor)(nil)
+	_ ast.ScopeSetter        = (*tableVisitor)(nil)
+	_ ast.ConditionalVisitor = (*tableVisitor)(nil)
+)
 
-func (*tableVisitor) BaseVisitor() {}
+func (*tableVisitor) Visitor() {}
 
-func (t *tableVisitor) UpdateScope(symbols *ast.SymbolTable) {
-	table := t.Table
-	for table != nil {
-		if table == symbols {
-			return
-		}
-		table = table.Enclosing
-	}
-
+func (t *tableVisitor) SetScope(symbols *ast.SymbolTable) {
 	t.Table = symbols
 }
 
@@ -257,7 +249,13 @@ type importVisitor struct {
 	triggerChar *string
 }
 
-func (*importVisitor) BaseVisitor() {}
+var (
+	_ ast.Visitor            = (*importVisitor)(nil)
+	_ ast.ConditionalVisitor = (*importVisitor)(nil)
+	_ ast.ImportStmtVisitor  = (*importVisitor)(nil)
+)
+
+func (*importVisitor) Visitor() {}
 
 func (vis *importVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), vis.pos)

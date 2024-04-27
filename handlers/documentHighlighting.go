@@ -22,10 +22,10 @@ func CreateTextDocumentDocumentHighlight(dm *documents.DocumentManager) protocol
 			searchMode: true,
 		}
 
-		ast.VisitAst(act.Module.Ast, highlighter)
+		ast.VisitModule(act.Module, highlighter)
 
 		highlighter.searchMode = false
-		ast.VisitAst(act.Module.Ast, highlighter)
+		ast.VisitModule(act.Module, highlighter)
 
 		return highlighter.highlightList, nil
 	}
@@ -38,7 +38,19 @@ type highlighter struct {
 	highlightList []protocol.DocumentHighlight
 }
 
-func (r *highlighter) BaseVisitor() {}
+var (
+	_ ast.Visitor            = (*highlighter)(nil)
+	_ ast.ConditionalVisitor = (*highlighter)(nil)
+)
+
+func (r *highlighter) Visitor() {}
+
+func (r *highlighter) ShouldVisit(node ast.Node) bool {
+	if !r.searchMode {
+		return true
+	}
+	return helper.IsInRange(node.GetRange(), r.pos)
+}
 
 func (r *highlighter) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if r.searchMode && helper.IsInRange(d.NameTok.Range, r.pos) {

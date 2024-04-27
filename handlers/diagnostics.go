@@ -20,12 +20,14 @@ type DiagnosticSender func(*documents.DocumentManager, glsp.NotifyFunc, string, 
 func CreateSendDiagnostics() DiagnosticSender {
 	refreshing := false
 	return func(dm *documents.DocumentManager, notify glsp.NotifyFunc, vscURI string, delay bool) {
+		// TODO: fix bad synchronization
 		if refreshing {
 			return
 		}
 		refreshing = true
 
 		go func(vscURI string) {
+			// TODO: fix bad synchronization
 			if delay {
 				time.Sleep(500 * time.Millisecond)
 			}
@@ -67,7 +69,12 @@ type diagnosticVisitor struct {
 	diagnostics []protocol.Diagnostic
 }
 
-var _ ast.BaseVisitor = (*diagnosticVisitor)(nil)
+var (
+	_ ast.Visitor        = (*diagnosticVisitor)(nil)
+	_ ast.BadDeclVisitor = (*diagnosticVisitor)(nil)
+	_ ast.BadExprVisitor = (*diagnosticVisitor)(nil)
+	_ ast.BadStmtVisitor = (*diagnosticVisitor)(nil)
+)
 
 func (d *diagnosticVisitor) add(err ddperror.Error) {
 	diagnostic := protocol.Diagnostic{
@@ -88,7 +95,7 @@ var (
 	errSrc        = "ddp"
 )
 
-func (*diagnosticVisitor) BaseVisitor() {}
+func (*diagnosticVisitor) Visitor() {}
 
 func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
@@ -96,10 +103,12 @@ func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
 	d.add(e.Err)
 	return ast.VisitRecurse
 }
+
 func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) ast.VisitResult {
 	d.add(s.Err)
 	return ast.VisitRecurse

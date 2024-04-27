@@ -28,12 +28,13 @@ func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protoco
 			shouldVisitFunc: nil,
 		}
 
-		ast.VisitAst(act.Module.Ast, tokenizer)
+		ast.VisitModule(act.Module, tokenizer)
 
 		tokens := tokenizer.getTokens()
 		return tokens, nil
 	}
 }
+
 func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocumentSemanticTokensRangeFunc {
 	return func(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
 		act, ok := dm.Get(params.TextDocument.URI)
@@ -52,7 +53,7 @@ func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocum
 			},
 		}
 
-		ast.VisitAst(act.Module.Ast, tokenizer)
+		ast.VisitModule(act.Module, tokenizer)
 
 		tokens := tokenizer.getTokens()
 		return tokens, nil
@@ -94,7 +95,12 @@ type semanticTokenizer struct {
 	shouldVisitFunc func(node ast.Node) bool
 }
 
-var _ ast.BaseVisitor = (*semanticTokenizer)(nil)
+var (
+	_ ast.Visitor            = (*semanticTokenizer)(nil)
+	_ ast.ConditionalVisitor = (*semanticTokenizer)(nil)
+)
+
+func (t *semanticTokenizer) Visitor() {}
 
 func (t *semanticTokenizer) ShouldVisit(node ast.Node) bool {
 	if t.shouldVisitFunc != nil {
@@ -117,8 +123,6 @@ func (t *semanticTokenizer) getTokens() *protocol.SemanticTokens {
 	}
 }
 
-func (*semanticTokenizer) BaseVisitor() {}
-
 func (t *semanticTokenizer) add(tok highlightedToken) {
 	t.tokens = append(t.tokens, tok)
 }
@@ -127,6 +131,7 @@ func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	for _, param := range d.ParamNames {
@@ -134,6 +139,7 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	}
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 	for _, field := range d.Fields {
 		switch field := field.(type) {
@@ -149,20 +155,24 @@ func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitIntLit(e *ast.IntLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitFloatLit(e *ast.FloatLit) ast.VisitResult {
 	t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeNumber, nil))
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitCharLit(e *ast.CharLit) ast.VisitResult {
-	//t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	// t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 	return ast.VisitRecurse
 }
+
 func (t *semanticTokenizer) VisitStringLit(e *ast.StringLit) ast.VisitResult {
-	//t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
+	// t.add(newHightlightedToken(e.GetRange(), t.doc, protocol.SemanticTokenTypeString, nil))
 	return ast.VisitRecurse
 }
 

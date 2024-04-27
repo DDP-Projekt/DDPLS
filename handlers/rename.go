@@ -37,7 +37,16 @@ type renamePreparer struct {
 	pos  protocol.Position
 }
 
-func (r *renamePreparer) BaseVisitor() {}
+var (
+	_ ast.Visitor            = (*renamePreparer)(nil)
+	_ ast.ConditionalVisitor = (*renamePreparer)(nil)
+)
+
+func (r *renamePreparer) Visitor() {}
+
+func (r *renamePreparer) ShouldVisit(node ast.Node) bool {
+	return helper.IsInRange(node.GetRange(), r.pos)
+}
 
 func (r *renamePreparer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 	if helper.IsInRange(d.NameTok.Range, r.pos) {
@@ -48,11 +57,9 @@ func (r *renamePreparer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 }
 
 func (r *renamePreparer) VisitIdent(d *ast.Ident) ast.VisitResult {
-	if helper.IsInRange(d.GetRange(), r.pos) {
-		r.decl = d.Declaration
-		return ast.VisitBreak
-	}
-	return ast.VisitRecurse
+	// no check due to ShouldVisit
+	r.decl = d.Declaration
+	return ast.VisitBreak
 }
 
 func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
@@ -68,7 +75,7 @@ func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 
 	for _, alias := range d.Aliases {
 		for _, tokens := range alias.Tokens {
-			if helper.IsInRange(tokens.Range, r.pos) {
+			if helper.IsInRange(tokens.Range, r.pos) && d.Body != nil {
 				r.decl, _, _ = d.Body.Symbols.LookupDecl(tokens.Literal[1 : len(tokens.Literal)-1])
 				return ast.VisitBreak
 			}
@@ -149,14 +156,16 @@ type renamer struct {
 	uri     protocol.DocumentUri
 }
 
-func (r *renamer) BaseVisitor() {}
+var _ ast.Visitor = (*renamer)(nil)
+
+func (r *renamer) Visitor() {}
 
 func (r *renamer) VisitIdent(e *ast.Ident) ast.VisitResult {
 	if e.Declaration != r.decl {
 		return ast.VisitRecurse
 	}
 
-	//uri := protocol.DocumentUri(uri.FromPath(e.Declaration.Mod.FileName))
+	// uri := protocol.DocumentUri(uri.FromPath(e.Declaration.Mod.FileName))
 	r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
 		Range:   helper.ToProtocolRange(e.GetRange()),
 		NewText: r.newName,
@@ -169,7 +178,7 @@ func (r *renamer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 		return ast.VisitRecurse
 	}
 
-	//uri := protocol.DocumentUri(uri.FromPath(d.Mod.FileName))
+	// uri := protocol.DocumentUri(uri.FromPath(d.Mod.FileName))
 	r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
 		Range:   helper.ToProtocolRange(d.NameTok.Range),
 		NewText: r.newName,
@@ -194,7 +203,7 @@ func (r *renamer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 
 		decl, _, _ := d.Body.Symbols.LookupDecl(name.Literal)
 		if decl == r.decl {
-			//uri := protocol.DocumentUri(uri.FromPath(d.Mod.FileName))
+			// uri := protocol.DocumentUri(uri.FromPath(d.Mod.FileName))
 			r.changes[r.uri] = append(r.changes[r.uri], protocol.TextEdit{
 				Range:   helper.ToProtocolRange(name.Range),
 				NewText: r.newName,

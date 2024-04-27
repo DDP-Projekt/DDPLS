@@ -20,11 +20,10 @@ func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.Text
 		}
 
 		visitor := &foldingVisitor{
-			foldRanges: make([]protocol.FoldingRange, 0),
-			module:     docMod,
+			foldRanges: make([]protocol.FoldingRange, 0, 8),
 		}
 
-		ast.VisitAst(docMod.Ast, visitor)
+		ast.VisitModule(docMod, visitor)
 
 		return visitor.foldRanges, nil
 	}
@@ -32,12 +31,11 @@ func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.Text
 
 type foldingVisitor struct {
 	foldRanges []protocol.FoldingRange
-	module     *ast.Module
 }
 
-var _ ast.BaseVisitor = (*foldingVisitor)(nil)
+var foldingVisitor_ ast.Visitor = (*foldingVisitor)(nil)
 
-func (*foldingVisitor) BaseVisitor() {}
+func (*foldingVisitor) Visitor() {}
 
 func (fold *foldingVisitor) VisitBlockStmt(s *ast.BlockStmt) ast.VisitResult {
 	fold.foldRanges = append(fold.foldRanges, protocol.FoldingRange{

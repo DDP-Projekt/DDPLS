@@ -3,7 +3,6 @@ package ddpls
 import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/handlers"
-	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	lspserver "github.com/tliron/glsp/server"

@@ -1,6 +1,6 @@
 module github.com/DDP-Projekt/DDPLS
 
-go 1.21
+go 1.22.2
 
 require (
 	github.com/DDP-Projekt/Kompilierer v0.2.0-alpha.0.20240427065541-8b31e87740a0

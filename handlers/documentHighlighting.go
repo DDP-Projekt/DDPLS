@@ -6,6 +6,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -88,21 +89,25 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 			r.decl = d
 			return ast.VisitBreak
 		}
+		if d.Body == nil {
+			return ast.VisitRecurse
+		}
 
 		for _, name := range d.ParamNames {
 			if helper.IsInRange(name.Range, r.pos) {
-				if d.Body == nil {
-					return ast.VisitRecurse
-				}
 				r.decl, _, _ = d.Body.Symbols.LookupDecl(name.Literal)
 				return ast.VisitBreak
 			}
 		}
 
 		for _, alias := range d.Aliases {
-			for _, aliasTokens := range alias.Tokens {
-				if helper.IsInRange(aliasTokens.Range, r.pos) {
-					r.decl, _, _ = d.Body.Symbols.LookupDecl(aliasTokens.Literal[1 : len(aliasTokens.Literal)-1])
+			for _, aliasToken := range alias.Tokens {
+				if aliasToken.Type != token.ALIAS_PARAMETER {
+					continue
+				}
+
+				if helper.IsInRange(aliasToken.Range, r.pos) {
+					r.decl, _, _ = d.Body.Symbols.LookupDecl(aliasToken.Literal[1 : len(aliasToken.Literal)-1])
 					return ast.VisitBreak
 				}
 			}

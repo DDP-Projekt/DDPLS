@@ -2,7 +2,7 @@
 name: Language Server crash
 about: Der Language Server ist abgestürzt
 title: ''
-labels: bug
+labels: Absturz
 assignees: ''
 
 ---

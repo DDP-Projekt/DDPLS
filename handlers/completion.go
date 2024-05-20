@@ -19,7 +19,7 @@ import (
 )
 
 func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
-	return func(context *glsp.Context, params *protocol.CompletionParams) (interface{}, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
 		// Add all types
 		items := make([]protocol.CompletionItem, 0)
 		for _, s := range ddpTypes {
@@ -91,7 +91,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		})
 
 		return items, nil
-	}
+	})
 }
 
 func decideCapitalization(index int, document string) bool {

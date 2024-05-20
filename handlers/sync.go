@@ -9,18 +9,18 @@ import (
 )
 
 func CreateTextDocumentDidOpen(dm *documents.DocumentManager, sendDiagnostics DiagnosticSender) protocol.TextDocumentDidOpenFunc {
-	return func(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+	return RecoverErr(func(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 		err := dm.AddAndParse(params.TextDocument.URI, params.TextDocument.Text)
 		if err != nil {
 			return fmt.Errorf("error while parsing module %s: %s", params.TextDocument.URI, err)
 		}
 		sendDiagnostics(dm, context.Notify, params.TextDocument.URI, false)
 		return nil
-	}
+	})
 }
 
 func CreateTextDocumentDidChange(dm *documents.DocumentManager, sendDiagnostics DiagnosticSender) protocol.TextDocumentDidChangeFunc {
-	return func(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+	return RecoverErr(func(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 		doc, ok := dm.Get(params.TextDocument.URI)
 		if !ok {
 			return fmt.Errorf("%s not in document map", params.TextDocument.URI)
@@ -37,7 +37,7 @@ func CreateTextDocumentDidChange(dm *documents.DocumentManager, sendDiagnostics 
 		}
 		sendDiagnostics(dm, context.Notify, string(doc.Uri), true)
 		return nil
-	}
+	})
 }
 
 func TextDocumentDidSave(*glsp.Context, *protocol.DidSaveTextDocumentParams) error {
@@ -45,8 +45,8 @@ func TextDocumentDidSave(*glsp.Context, *protocol.DidSaveTextDocumentParams) err
 }
 
 func CreateTextDocumentDidClose(dm *documents.DocumentManager) protocol.TextDocumentDidCloseFunc {
-	return func(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
+	return RecoverErr(func(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
 		dm.Delete(params.TextDocument.URI)
 		return nil
-	}
+	})
 }

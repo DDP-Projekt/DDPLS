@@ -12,7 +12,7 @@ import (
 )
 
 func CreateTextDocumentDocumentHighlight(dm *documents.DocumentManager) protocol.TextDocumentDocumentHighlightFunc {
-	return func(context *glsp.Context, params *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.DocumentHighlightParams) ([]protocol.DocumentHighlight, error) {
 		act, ok := dm.Get(params.TextDocument.URI)
 		if !ok {
 			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
@@ -29,7 +29,7 @@ func CreateTextDocumentDocumentHighlight(dm *documents.DocumentManager) protocol
 		ast.VisitModule(act.Module, highlighter)
 
 		return highlighter.highlightList, nil
-	}
+	})
 }
 
 type highlighter struct {

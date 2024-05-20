@@ -14,7 +14,7 @@ import (
 )
 
 func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protocol.TextDocumentSemanticTokensFullFunc {
-	return func(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
 		act, ok := dm.Get(params.TextDocument.URI)
 		if !ok {
 			return nil, fmt.Errorf("%s not in document map", params.TextDocument.URI)
@@ -32,11 +32,11 @@ func CreateTextDocumentSemanticTokensFull(dm *documents.DocumentManager) protoco
 
 		tokens := tokenizer.getTokens()
 		return tokens, nil
-	}
+	})
 }
 
 func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocumentSemanticTokensRangeFunc {
-	return func(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
 		act, ok := dm.Get(params.TextDocument.URI)
 		if !ok {
 			return nil, fmt.Errorf("%s not in document map (Range: %v)", params.TextDocument.URI, params.Range)
@@ -57,7 +57,7 @@ func CreateSemanticTokensRange(dm *documents.DocumentManager) protocol.TextDocum
 
 		tokens := tokenizer.getTokens()
 		return tokens, nil
-	}
+	})
 }
 
 type highlightedToken struct {

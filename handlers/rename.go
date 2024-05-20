@@ -12,7 +12,7 @@ import (
 )
 
 func CreateTextDocumentPrepareRename(dm *documents.DocumentManager) protocol.TextDocumentPrepareRenameFunc {
-	return func(context *glsp.Context, params *protocol.PrepareRenameParams) (any, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.PrepareRenameParams) (any, error) {
 		var docMod *ast.Module
 		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
 			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
@@ -29,7 +29,7 @@ func CreateTextDocumentPrepareRename(dm *documents.DocumentManager) protocol.Tex
 		return protocol.DefaultBehavior{
 			DefaultBehavior: preparer.decl != nil,
 		}, nil
-	}
+	})
 }
 
 type renamePreparer struct {
@@ -115,7 +115,7 @@ func (r *renamePreparer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 }
 
 func CreateTextDocumentRename(dm *documents.DocumentManager) protocol.TextDocumentRenameFunc {
-	return func(context *glsp.Context, params *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
 		var docMod *ast.Module
 		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
 			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
@@ -146,7 +146,7 @@ func CreateTextDocumentRename(dm *documents.DocumentManager) protocol.TextDocume
 		}
 
 		return edit, nil
-	}
+	})
 }
 
 type renamer struct {

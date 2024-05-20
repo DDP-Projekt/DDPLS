@@ -52,7 +52,7 @@ func NewDDPLS() *DDPLS {
 }
 
 func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
-	return func(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
+	return handlers.RecoverAnyErr(func(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 		if params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport != nil {
 			handlers.SupportsSnippets = *params.Capabilities.TextDocument.Completion.CompletionItem.SnippetSupport
 		}
@@ -89,7 +89,7 @@ func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
 				Version: &version,
 			},
 		}, nil
-	}
+	})
 }
 
 // helper for semantic token

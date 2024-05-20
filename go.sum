@@ -1,5 +1,11 @@
 github.com/DDP-Projekt/Kompilierer v0.3.0-alpha h1:w/k3DeSuNKcUUP1C8zZg1rLHIx6A2UQ5CzQjeLCADK4=
 github.com/DDP-Projekt/Kompilierer v0.3.0-alpha/go.mod h1:TQzKKQuclk2+fn9dGZ+XqyoZER8eZLr4iWGD1bXZVTg=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240510183242-5e5cb0739b1f h1:9P85XPJ3lwm6c15D2fKx51K57DozGnPvff/22wAFb6o=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240510183242-5e5cb0739b1f/go.mod h1:TQzKKQuclk2+fn9dGZ+XqyoZER8eZLr4iWGD1bXZVTg=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240511202412-256aba864dae h1:/X8rFttL9iNmhfgjAfi6+seFYGpAMMEl1WkCA3V6gVE=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240511202412-256aba864dae/go.mod h1:TQzKKQuclk2+fn9dGZ+XqyoZER8eZLr4iWGD1bXZVTg=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240512103324-cb73f1d38da8 h1:Zw9GFBVVqeQx+KzyShLNNGHj0hDHW6EyzdXp5oRrPAM=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240512103324-cb73f1d38da8/go.mod h1:TQzKKQuclk2+fn9dGZ+XqyoZER8eZLr4iWGD1bXZVTg=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

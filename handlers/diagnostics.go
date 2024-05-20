@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"fmt"
+	"reflect"
+	"runtime/debug"
 	"time"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -32,6 +34,13 @@ func CreateSendDiagnostics() DiagnosticSender {
 				time.Sleep(500 * time.Millisecond)
 			}
 			refreshing = false
+
+			defer func() {
+				if err := recover(); err != nil {
+					log.Errorf("panic of type %s in diagnostics: %v", reflect.TypeOf(err), err)
+					log.Errorf("stack trace: %s", string(debug.Stack()))
+				}
+			}()
 
 			var (
 				docMod *ast.Module

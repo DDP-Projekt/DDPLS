@@ -17,7 +17,7 @@ import (
 )
 
 func CreateTextDocumentHover(dm *documents.DocumentManager) protocol.TextDocumentHoverFunc {
-	return func(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
 		hover := &hoverVisitor{
 			hover: nil,
 			pos:   params.Position,
@@ -35,7 +35,7 @@ func CreateTextDocumentHover(dm *documents.DocumentManager) protocol.TextDocumen
 		ast.VisitModule(docModule, hover)
 
 		return hover.hover, nil
-	}
+	})
 }
 
 const commentCutset = " \r\n\t[]"

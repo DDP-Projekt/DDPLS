@@ -12,7 +12,7 @@ import (
 )
 
 func CreateTextDocumentDefinition(dm *documents.DocumentManager) protocol.TextDocumentDefinitionFunc {
-	return func(context *glsp.Context, params *protocol.DefinitionParams) (any, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.DefinitionParams) (any, error) {
 		definition := &definitionVisitor{
 			location: nil,
 			pos:      params.Position,
@@ -29,7 +29,7 @@ func CreateTextDocumentDefinition(dm *documents.DocumentManager) protocol.TextDo
 		ast.VisitModuleRec(definition.docMod, definition)
 
 		return definition.location, nil
-	}
+	})
 }
 
 type definitionVisitor struct {

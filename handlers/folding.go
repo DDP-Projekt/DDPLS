@@ -11,7 +11,7 @@ import (
 )
 
 func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.TextDocumentFoldingRangeFunc {
-	return func(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.FoldingRangeParams) ([]protocol.FoldingRange, error) {
 		var docMod *ast.Module
 		if doc, ok := dm.Get(params.TextDocument.URI); !ok {
 			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
@@ -26,7 +26,7 @@ func CreateTextDocumentFoldingRange(dm *documents.DocumentManager) protocol.Text
 		ast.VisitModule(docMod, visitor)
 
 		return visitor.foldRanges, nil
-	}
+	})
 }
 
 type foldingVisitor struct {

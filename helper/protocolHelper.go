@@ -2,6 +2,7 @@ package helper
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
@@ -28,11 +29,11 @@ func GetRangeLength(rang token.Range, doc *documents.DocumentState) int {
 		return int(rang.End.Column - rang.Start.Column)
 	}
 	lines := strings.Split(doc.Content, "\n")
-	length := len(lines[rang.Start.Line-1][rang.Start.Column-1:])
+	length := utf8.RuneCountInString(lines[rang.Start.Line-1][rang.Start.Column-1:])
 	for i := rang.Start.Line; i < rang.End.Line-1; i++ {
-		length += len(lines[i])
+		length += utf8.RuneCountInString(lines[i])
 	}
-	length += len(lines[rang.End.Line-1][:rang.End.Column-1])
+	length += utf8.RuneCountInString(lines[rang.End.Line-1][:rang.End.Column-1])
 	return length
 }
 

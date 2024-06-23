@@ -11,6 +11,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -190,16 +191,50 @@ func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult 
 
 // TODO: list all public decls
 func (h *hoverVisitor) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
-	if stmt.Module == nil || stmt.Module.Comment == nil {
+	if stmt.Module == nil {
 		return ast.VisitBreak
 	}
 
-	comment := trimComment(stmt.Module.Comment)
+	comment := getCommentDisplayString(stmt.Module.Comment)
+
+	variableSection := strings.Builder{}
+	functionSection := strings.Builder{}
+	structSection := strings.Builder{}
+
+	for _, decl := range stmt.Module.PublicDecls {
+		switch decl := decl.(type) {
+		case *ast.VarDecl:
+			switch decl.Type.Gender() {
+			case ddptypes.MASKULIN:
+				variableSection.WriteString("Den ")
+			case ddptypes.FEMININ:
+				variableSection.WriteString("Die ")
+			case ddptypes.NEUTRUM:
+				variableSection.WriteString("Das ")
+			}
+
+			variableSection.WriteString(decl.Type.String() + " " + decl.Name() + ".\n")
+		case *ast.FuncDecl:
+			functionSection.WriteString(fmt.Sprintf("Die Funktion %s.\n", decl.Name()))
+		case *ast.StructDecl:
+			structSection.WriteString(fmt.Sprintf("Die Kombination %s.\n", decl.Name()))
+		}
+	}
+
+	result := fmt.Sprintf(
+		"%s\n\n%s deklariert:\n\n```ddp\n%s\n%s\n%s\n```\n",
+		comment,
+		h.getHoverFilePath(stmt.Module.FileName),
+		structSection.String(),
+		variableSection.String(),
+		functionSection.String(),
+	)
+
 	pRange := helper.ToProtocolRange(stmt.GetRange())
 	h.hover = &protocol.Hover{
 		Contents: protocol.MarkupContent{
-			Kind:  protocol.MarkupKindPlainText,
-			Value: comment,
+			Kind:  protocol.MarkupKindMarkdown,
+			Value: result,
 		},
 		Range: &pRange,
 	}

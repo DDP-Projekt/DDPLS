@@ -63,7 +63,8 @@ func (r *renamePreparer) VisitIdent(d *ast.Ident) ast.VisitResult {
 }
 
 func (r *renamePreparer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
-	for _, name := range d.ParamNames {
+	for i := range d.Parameters {
+		name := d.Parameters[i].Name
 		if helper.IsInRange(name.Range, r.pos) {
 			if d.Body == nil {
 				return ast.VisitRecurse
@@ -196,7 +197,8 @@ func (r *renamer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		})
 	}
 
-	for _, name := range d.ParamNames {
+	for i := range d.Parameters {
+		name := d.Parameters[i].Name
 		if d.Body == nil {
 			return ast.VisitRecurse
 		}

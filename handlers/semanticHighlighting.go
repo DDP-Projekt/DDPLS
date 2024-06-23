@@ -134,8 +134,9 @@ func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
 
 func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
-	for _, param := range d.ParamNames {
-		t.add(newHightlightedToken(token.NewRange(&param, &param), t.doc, protocol.SemanticTokenTypeParameter, nil))
+	for i := range d.Parameters {
+		name := &d.Parameters[i].Name
+		t.add(newHightlightedToken(token.NewRange(name, name), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
 	return ast.VisitRecurse
 }

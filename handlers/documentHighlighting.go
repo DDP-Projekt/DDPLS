@@ -93,7 +93,8 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 			return ast.VisitRecurse
 		}
 
-		for _, name := range d.ParamNames {
+		for i := range d.Parameters {
+			name := d.Parameters[i].Name
 			if helper.IsInRange(name.Range, r.pos) {
 				r.decl, _, _ = d.Body.Symbols.LookupDecl(name.Literal)
 				return ast.VisitBreak
@@ -120,12 +121,12 @@ func (r *highlighter) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		})
 	}
 
-	for _, name := range d.ParamNames {
+	for i := range d.Parameters {
 		if d.Body == nil {
 			return ast.VisitRecurse
 		}
 
-		decl, _, _ := d.Body.Symbols.LookupDecl(name.Literal)
+		decl, _, _ := d.Body.Symbols.LookupDecl(d.Parameters[i].Name.Literal)
 		if decl != r.decl {
 			continue
 		}

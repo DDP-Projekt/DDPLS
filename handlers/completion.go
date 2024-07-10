@@ -37,6 +37,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 		visitor := &tableVisitor{
 			Table: docModule.Ast.Symbols,
+			tempTable: docModule.Ast.Symbols,
 			pos:   params.Position,
 		}
 		ast.VisitModule(docModule, visitor)
@@ -47,21 +48,24 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		for table != nil {
 			for name := range table.Declarations {
 				if _, ok := varItems[name]; !ok {
-					if decl, ok, isVar := table.LookupDecl(name); ok && isVar {
+					decl, _, _ := table.LookupDecl(name)
+					if decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
+						continue
+					}
+
+					switch decl := decl.(type) {
+					case *ast.VarDecl:
 						varItems[name] = protocol.CompletionItem{
 							Kind:  ptr(protocol.CompletionItemKindVariable),
 							Label: name,
 						}
-					} else {
-						switch decl := decl.(type) {
-						case *ast.FuncDecl:
-							for _, a := range decl.Aliases {
-								aliases = append(aliases, a)
-							}
-						case *ast.StructDecl:
-							for _, a := range decl.Aliases {
-								aliases = append(aliases, a)
-							}
+					case *ast.FuncDecl:
+						for _, a := range decl.Aliases {
+							aliases = append(aliases, a)
+						}
+					case *ast.StructDecl:
+						for _, a := range decl.Aliases {
+							aliases = append(aliases, a)
 						}
 					}
 				}
@@ -191,6 +195,7 @@ var (
 		"Boolean Liste",
 		"Text Liste",
 		"Buchstaben Liste",
+		"nichts",
 	}
 	dudenPaths = make([]string, 0)
 )
@@ -222,8 +227,9 @@ func init() {
 }
 
 type tableVisitor struct {
-	Table *ast.SymbolTable
-	pos   protocol.Position
+	Table     *ast.SymbolTable
+	tempTable *ast.SymbolTable
+	pos       protocol.Position
 }
 
 var (
@@ -235,11 +241,15 @@ var (
 func (*tableVisitor) Visitor() {}
 
 func (t *tableVisitor) SetScope(symbols *ast.SymbolTable) {
-	t.Table = symbols
+	t.tempTable = symbols
 }
 
 func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
-	return helper.IsInRange(node.GetRange(), t.pos)
+	shouldVisit := helper.IsInRange(node.GetRange(), t.pos)
+	if shouldVisit {
+		t.Table = t.tempTable
+	}
+	return shouldVisit
 }
 
 type importVisitor struct {

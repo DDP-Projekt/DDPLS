@@ -67,6 +67,10 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 						for _, a := range decl.Aliases {
 							aliases = append(aliases, a)
 						}
+						items = append(items, protocol.CompletionItem{
+							Kind:  ptr(protocol.CompletionItemKindClass),
+							Label: decl.Name(),
+						})
 					}
 				}
 			}

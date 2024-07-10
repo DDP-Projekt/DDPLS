@@ -38,16 +38,16 @@ func FromProtocolRange(rang protocol.Range) token.Range {
 
 func ToProtocolPosition(pos token.Position) protocol.Position {
 	return protocol.Position{
-			Line:      uint32(pos.Line - 1),
-			Character: uint32(pos.Column - 1),
-		}
+		Line:      uint32(pos.Line - 1),
+		Character: uint32(pos.Column - 1),
+	}
 }
 
 func FromProtocolPosition(pos protocol.Position) token.Position {
 	return token.Position{
-			Line:      uint(pos.Line + 1),
-			Column: uint(pos.Character + 1),
-		}
+		Line:   uint(pos.Line + 1),
+		Column: uint(pos.Character + 1),
+	}
 }
 
 // returns the length of a token.Range

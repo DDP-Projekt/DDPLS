@@ -14,6 +14,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
+	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -35,10 +36,12 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 			docModule = d.Module
 		}
 
+		isDotCompletion := params.Context.TriggerKind == protocol.CompletionTriggerKindTriggerCharacter && *params.Context.TriggerCharacter == "."
 		visitor := &tableVisitor{
-			Table: docModule.Ast.Symbols,
-			tempTable: docModule.Ast.Symbols,
-			pos:   params.Position,
+			Table:           docModule.Ast.Symbols,
+			tempTable:       docModule.Ast.Symbols,
+			pos:             params.Position,
+			isDotCompletion: isDotCompletion,
 		}
 		ast.VisitModule(docModule, visitor)
 
@@ -74,8 +77,30 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 					}
 				}
 			}
-
 			table = table.Enclosing
+		}
+
+		ident := visitor.ident
+		if isDotCompletion && ident != nil && ident.Declaration != nil && ddptypes.IsStruct(ident.Declaration.Type) {
+			structType := ident.Declaration.Type.(*ddptypes.StructType)
+			for _, field := range structType.Fields {
+				items = append(items, protocol.CompletionItem{
+					Kind:     ptr(protocol.CompletionItemKindField),
+					Label:    field.Name,
+					SortText: ptr("0"),
+					TextEdit: protocol.TextEdit{
+						NewText: fmt.Sprintf("%s von %s", field.Name, ident.Declaration.Name()),
+						Range: protocol.Range{
+							Start: helper.ToProtocolPosition(ident.GetRange().Start),
+							End: protocol.Position{
+								Line:      params.Position.Line,
+								Character: params.Position.Character,
+							},
+						},
+					},
+					FilterText: ptr(fmt.Sprintf("%s.%s", ident.Declaration.Name(), field.Name)),
+				})
+			}
 		}
 
 		for _, v := range varItems {
@@ -231,15 +256,18 @@ func init() {
 }
 
 type tableVisitor struct {
-	Table     *ast.SymbolTable
-	tempTable *ast.SymbolTable
-	pos       protocol.Position
+	Table           *ast.SymbolTable
+	tempTable       *ast.SymbolTable
+	pos             protocol.Position
+	ident           *ast.Ident
+	isDotCompletion bool
 }
 
 var (
 	_ ast.Visitor            = (*tableVisitor)(nil)
 	_ ast.ScopeSetter        = (*tableVisitor)(nil)
 	_ ast.ConditionalVisitor = (*tableVisitor)(nil)
+	_ ast.IdentVisitor       = (*tableVisitor)(nil)
 )
 
 func (*tableVisitor) Visitor() {}
@@ -253,7 +281,21 @@ func (t *tableVisitor) ShouldVisit(node ast.Node) bool {
 	if shouldVisit {
 		t.Table = t.tempTable
 	}
+
+	pos, end := helper.FromProtocolPosition(t.pos), node.GetRange().End
+	if t.isDotCompletion && end.Line == pos.Line && end.Column == pos.Column-1 {
+		shouldVisit = true
+	}
+
 	return shouldVisit
+}
+
+func (t *tableVisitor) VisitIdent(ident *ast.Ident) ast.VisitResult {
+	pos, end := helper.FromProtocolPosition(t.pos), ident.GetRange().End
+	if t.isDotCompletion && end.Line == pos.Line && end.Column == pos.Column-1 {
+		t.ident = ident
+	}
+	return ast.VisitRecurse
 }
 
 type importVisitor struct {

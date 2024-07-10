@@ -72,6 +72,7 @@ func (ls *DDPLS) createInitialize() protocol.InitializeFunc {
 			TriggerCharacters: []string{
 				"\"",
 				"/",
+				".",
 			},
 		}
 		temp := true

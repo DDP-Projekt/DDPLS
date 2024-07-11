@@ -1,5 +1,5 @@
-github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240623071343-ee00d3ed931f h1:KE1+doPiDF2EckRB40PBjBAiBsMJvqhkRo7F8R5z9Vk=
-github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240623071343-ee00d3ed931f/go.mod h1:wIQjgAVockUlLS3bRd2WSuJlPUFC+ZTZizIQ1rsEeP4=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240711175141-cc381ec1c755 h1:m2csO1dxsKYuyp4+fCdbH4Pg2DyGJhXzRmXyDGfQbwU=
+github.com/DDP-Projekt/Kompilierer v0.3.0-alpha.0.20240711175141-cc381ec1c755/go.mod h1:wIQjgAVockUlLS3bRd2WSuJlPUFC+ZTZizIQ1rsEeP4=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

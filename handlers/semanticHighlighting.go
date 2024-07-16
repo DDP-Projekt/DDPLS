@@ -128,6 +128,7 @@ func (t *semanticTokenizer) add(tok highlightedToken) {
 }
 
 func (t *semanticTokenizer) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
+	t.add(newHightlightedToken(d.TypeRange, t.doc, protocol.SemanticTokenTypeType, nil))
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeVariable, nil))
 	return ast.VisitRecurse
 }
@@ -138,6 +139,11 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		name := &d.Parameters[i].Name
 		t.add(newHightlightedToken(token.NewRange(name, name), t.doc, protocol.SemanticTokenTypeParameter, nil))
 	}
+	for i := range d.Parameters {
+		typeRange := d.Parameters[i].TypeRange
+		t.add(newHightlightedToken(typeRange, t.doc, protocol.SemanticTokenTypeType, nil))
+	}
+	t.add(newHightlightedToken(d.ReturnTypeRange, t.doc, protocol.SemanticTokenTypeType, nil))
 	return ast.VisitRecurse
 }
 
@@ -150,6 +156,18 @@ func (t *semanticTokenizer) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
 	}
 	t.add(newHightlightedToken(token.NewRange(&d.NameTok, &d.NameTok), t.doc, protocol.SemanticTokenTypeClass, nil))
 	return ast.VisitSkipChildren
+}
+
+func (t *semanticTokenizer) VisitTypeAliasDecl(d *ast.TypeAliasDecl) ast.VisitResult {
+	t.add(newHightlightedToken(d.UnderlyingRange, t.doc, protocol.SemanticTokenTypeClass, nil))
+	t.add(newHightlightedToken(d.NameTok.Range, t.doc, protocol.SemanticTokenTypeClass, nil))
+	return ast.VisitRecurse
+}
+
+func (t *semanticTokenizer) VisitTypeDefDecl(d *ast.TypeDefDecl) ast.VisitResult {
+	t.add(newHightlightedToken(d.NameTok.Range, t.doc, protocol.SemanticTokenTypeClass, nil))
+	t.add(newHightlightedToken(d.UnderlyingRange, t.doc, protocol.SemanticTokenTypeClass, nil))
+	return ast.VisitRecurse
 }
 
 func (t *semanticTokenizer) VisitIdent(e *ast.Ident) ast.VisitResult {

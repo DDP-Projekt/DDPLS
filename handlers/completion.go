@@ -21,109 +21,85 @@ import (
 
 func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
 	return RecoverAnyErr(func(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
-		// Add all types
-		items := make([]protocol.CompletionItem, 0)
-		for _, s := range ddpTypes {
-			items = append(items, protocol.CompletionItem{
-				Kind:  ptr(protocol.CompletionItemKindClass),
-				Label: s,
-			})
-		}
-
 		var docModule *ast.Module
 		// Get the current Document
 		if d, ok := dm.Get(params.TextDocument.URI); ok {
 			docModule = d.Module
 		}
 
-		isDotCompletion := params.Context.TriggerKind == protocol.CompletionTriggerKindTriggerCharacter && *params.Context.TriggerCharacter == "."
+		// in case of import completion we need nothing else
+		importVisitor := &importVisitor{
+			pos:               params.Position,
+			modPath:           docModule.FileName,
+			isSlashCompletion: params.Context.TriggerKind == protocol.CompletionTriggerKindTriggerCharacter && *params.Context.TriggerCharacter == "/",
+		}
+		ast.VisitModule(docModule, importVisitor)
+		if importVisitor.didVisit {
+			return importVisitor.items, nil
+		}
+
 		visitor := &tableVisitor{
 			Table:           docModule.Ast.Symbols,
 			tempTable:       docModule.Ast.Symbols,
 			pos:             params.Position,
-			isDotCompletion: isDotCompletion,
+			isDotCompletion: params.Context.TriggerKind == protocol.CompletionTriggerKindTriggerCharacter && *params.Context.TriggerCharacter == ".",
 		}
 		ast.VisitModule(docModule, visitor)
 
+		items := make([]protocol.CompletionItem, 0, len(ddpTypes)+53)
+
+		// in case of dot completions we don't need anything else
+		if visitor.isDotCompletion {
+			items = appendDotCompletion(items, visitor.ident, params.Position)
+			return items, nil
+		}
+
+		items = appendDDPTypes(items)
+
 		table := visitor.Table
-		varItems := make(map[string]protocol.CompletionItem)
-		aliases := make([]ast.Alias, 0)
+		varItems := make(map[string]struct{}, 16)
 		for table != nil {
 			for name := range table.Declarations {
-				if _, ok := varItems[name]; !ok {
-					decl, _, _ := table.LookupDecl(name)
-					if decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
-						continue
-					}
+				decl, _, _ := table.LookupDecl(name)
+				if decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
+					continue
+				}
 
-					switch decl := decl.(type) {
-					case *ast.VarDecl:
-						varItems[name] = protocol.CompletionItem{
+				switch decl := decl.(type) {
+				case *ast.VarDecl:
+					if _, ok := varItems[name]; !ok {
+						varItems[name] = struct{}{}
+						items = append(items, protocol.CompletionItem{
 							Kind:  ptr(protocol.CompletionItemKindVariable),
 							Label: name,
-						}
-					case *ast.FuncDecl:
-						for _, a := range decl.Aliases {
-							aliases = append(aliases, a)
-						}
-					case *ast.StructDecl:
-						for _, a := range decl.Aliases {
-							aliases = append(aliases, a)
-						}
-						items = append(items, protocol.CompletionItem{
-							Kind:  ptr(protocol.CompletionItemKindClass),
-							Label: decl.Name(),
 						})
 					}
+				case *ast.FuncDecl:
+					for _, a := range decl.Aliases {
+						items = append(items, aliasToCompletionItem(a)...)
+					}
+				case *ast.StructDecl:
+					for _, a := range decl.Aliases {
+						items = append(items, aliasToCompletionItem(a)...)
+					}
+					items = appendTypeName(items, decl)
+				case *ast.TypeAliasDecl:
+					items = appendTypeName(items, decl)
+				case *ast.TypeDefDecl:
+					items = appendTypeName(items, decl)
 				}
 			}
 			table = table.Enclosing
 		}
 
-		ident := visitor.ident
-		if isDotCompletion && ident != nil && ident.Declaration != nil && ddptypes.IsStruct(ident.Declaration.Type) {
-			structType := ident.Declaration.Type.(*ddptypes.StructType)
-			for _, field := range structType.Fields {
-				items = append(items, protocol.CompletionItem{
-					Kind:     ptr(protocol.CompletionItemKindField),
-					Label:    field.Name,
-					SortText: ptr("0"),
-					TextEdit: protocol.TextEdit{
-						NewText: fmt.Sprintf("%s von %s", field.Name, ident.Declaration.Name()),
-						Range: protocol.Range{
-							Start: helper.ToProtocolPosition(ident.GetRange().Start),
-							End: protocol.Position{
-								Line:      params.Position.Line,
-								Character: params.Position.Character,
-							},
-						},
-					},
-					FilterText: ptr(fmt.Sprintf("%s.%s", ident.Declaration.Name(), field.Name)),
-				})
-			}
-		}
-
-		for _, v := range varItems {
-			items = append(items, v)
-		}
-
-		for _, alias := range aliases {
-			items = append(items, aliasToCompletionItem(alias)...)
-		}
-
-		// must be here at the end because it might clear previous items
-		triggerChar := (*string)(nil)
-		if params.Context != nil {
-			triggerChar = params.Context.TriggerCharacter
-		}
-		ast.VisitModule(docModule, &importVisitor{
-			pos:         params.Position,
-			items:       &items,
-			modPath:     docModule.FileName,
-			triggerChar: triggerChar,
-		})
-
 		return items, nil
+	})
+}
+
+func appendTypeName(items []protocol.CompletionItem, decl ast.Declaration) []protocol.CompletionItem {
+	return append(items, protocol.CompletionItem{
+		Kind:  ptr(protocol.CompletionItemKindClass),
+		Label: decl.Name(),
 	})
 }
 
@@ -255,6 +231,41 @@ func init() {
 	}
 }
 
+func appendDDPTypes(items []protocol.CompletionItem) []protocol.CompletionItem {
+	for _, s := range ddpTypes {
+		items = append(items, protocol.CompletionItem{
+			Kind:  ptr(protocol.CompletionItemKindClass),
+			Label: s,
+		})
+	}
+	return items
+}
+
+func appendDotCompletion(items []protocol.CompletionItem, ident *ast.Ident, pos protocol.Position) []protocol.CompletionItem {
+	if ident != nil && ident.Declaration != nil && ddptypes.IsStruct(ident.Declaration.Type) {
+		structType := ident.Declaration.Type.(*ddptypes.StructType)
+		for _, field := range structType.Fields {
+			items = append(items, protocol.CompletionItem{
+				Kind:     ptr(protocol.CompletionItemKindField),
+				Label:    field.Name,
+				SortText: ptr("0"),
+				TextEdit: protocol.TextEdit{
+					NewText: fmt.Sprintf("%s von %s", field.Name, ident.Declaration.Name()),
+					Range: protocol.Range{
+						Start: helper.ToProtocolPosition(ident.GetRange().Start),
+						End: protocol.Position{
+							Line:      pos.Line,
+							Character: pos.Character,
+						},
+					},
+				},
+				FilterText: ptr(fmt.Sprintf("%s.%s", ident.Declaration.Name(), field.Name)),
+			})
+		}
+	}
+	return items
+}
+
 type tableVisitor struct {
 	Table           *ast.SymbolTable
 	tempTable       *ast.SymbolTable
@@ -299,10 +310,11 @@ func (t *tableVisitor) VisitIdent(ident *ast.Ident) ast.VisitResult {
 }
 
 type importVisitor struct {
-	pos         protocol.Position
-	items       *[]protocol.CompletionItem
-	modPath     string
-	triggerChar *string
+	pos               protocol.Position
+	items             []protocol.CompletionItem
+	modPath           string
+	isSlashCompletion bool
+	didVisit          bool
 }
 
 var (
@@ -319,9 +331,10 @@ func (vis *importVisitor) ShouldVisit(node ast.Node) bool {
 
 func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult {
 	if helper.IsInRange(imprt.FileName.Range, protocol.Position(vis.pos)) {
+		vis.didVisit = true
 		// clear the items, because we want no keywords and variables if we
 		// are in an import path
-		*vis.items = make([]protocol.CompletionItem, 0, len(dudenPaths))
+		vis.items = make([]protocol.CompletionItem, 0, len(dudenPaths))
 
 		incompletePath := filepath.Dir(ast.TrimStringLit(&imprt.FileName))
 
@@ -330,7 +343,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult
 		}
 
 		searchPath := filepath.Join(filepath.Dir(vis.modPath), incompletePath)
-		if vis.triggerChar != nil && *vis.triggerChar == "/" && incompletePath == "Duden" {
+		if vis.isSlashCompletion && incompletePath == "Duden" {
 			searchPath = ddppath.Duden
 		}
 
@@ -347,39 +360,15 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult
 			}
 
 			if path := getRelevantEntryName(entry); path != "" {
-				if vis.triggerChar != nil && *vis.triggerChar != "/" {
+				if vis.isSlashCompletion {
 					path = incompletePath + "/" + path
 				}
 				finalPath := strings.TrimPrefix(path, "./")
-				*vis.items = append(*vis.items, pathToCompletionItem(finalPath))
+				vis.items = append(vis.items, pathToCompletionItem(finalPath))
 			}
 		}
 	}
-	// module could not be parsed yet, return
-	if imprt.Module == nil {
-		return ast.VisitRecurse
-	}
-
-	// module could be parsed, complete symbol imports
-	for _, ident := range imprt.ImportedSymbols {
-		if !helper.IsInRange(ident.Range, vis.pos) {
-			continue
-		}
-
-		*vis.items = make([]protocol.CompletionItem, 0, len(imprt.Module.PublicDecls))
-		for name, decl := range imprt.Module.PublicDecls {
-			kind := ptr(protocol.CompletionItemKindFunction)
-			if _, ok := decl.(*ast.VarDecl); ok {
-				kind = ptr(protocol.CompletionItemKindVariable)
-			}
-			*vis.items = append(*vis.items, protocol.CompletionItem{
-				Kind:  kind,
-				Label: name,
-			})
-		}
-		break
-	}
-	return ast.VisitRecurse
+	return ast.VisitBreak
 }
 
 func pathToCompletionItem(path string) protocol.CompletionItem {
@@ -394,8 +383,8 @@ func pathToCompletionItem(path string) protocol.CompletionItem {
 	}
 }
 
-func addDudenPaths(items *[]protocol.CompletionItem) {
+func addDudenPaths(items []protocol.CompletionItem) {
 	for _, path := range dudenPaths {
-		*items = append(*items, pathToCompletionItem(path))
+		items = append(items, pathToCompletionItem(path))
 	}
 }

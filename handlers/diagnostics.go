@@ -86,9 +86,14 @@ var (
 )
 
 func (d *diagnosticVisitor) add(err ddperror.Error) {
+	severity := &severityError
+	if err.Level == ddperror.LEVEL_WARN {
+		severity = &severityWarning
+	}
+
 	diagnostic := protocol.Diagnostic{
 		Range:    helper.ToProtocolRange(err.Range),
-		Severity: &severityError,
+		Severity: severity,
 		Source:   &errSrc,
 		Message:  fmt.Sprintf("%s (%d)", err.Msg, err.Code),
 	}
@@ -100,8 +105,9 @@ func (d *diagnosticVisitor) add(err ddperror.Error) {
 }
 
 var (
-	severityError = protocol.DiagnosticSeverityError
-	errSrc        = "ddp"
+	severityError   = protocol.DiagnosticSeverityError
+	severityWarning = protocol.DiagnosticSeverityWarning
+	errSrc          = "ddp"
 )
 
 func (*diagnosticVisitor) Visitor() {}

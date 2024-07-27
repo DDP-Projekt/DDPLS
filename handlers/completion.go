@@ -13,6 +13,7 @@ import (
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/DDPLS/log"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
+	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
 	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/tliron/glsp"
@@ -22,9 +23,16 @@ import (
 func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDocumentCompletionFunc {
 	return RecoverAnyErr(func(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
 		var docModule *ast.Module
+		var latestError *ddperror.Error
 		// Get the current Document
 		if d, ok := dm.Get(params.TextDocument.URI); ok {
 			docModule = d.Module
+			for _, err := range d.LatestErrors {
+				if helper.IsInRange(err.Range, params.Position) {
+					latestError = &err
+					break
+				}
+			}
 		}
 
 		// in case of import completion we need nothing else
@@ -58,6 +66,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 		table := visitor.Table
 		varItems := make(map[string]struct{}, 16)
+		wantType := latestError != nil && latestError.Code == ddperror.SYN_EXPECTED_TYPENAME
 		for table != nil {
 			for name := range table.Declarations {
 				decl, _, _ := table.LookupDecl(name)
@@ -67,20 +76,14 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 				switch decl := decl.(type) {
 				case *ast.VarDecl:
-					if _, ok := varItems[name]; !ok {
-						varItems[name] = struct{}{}
-						items = append(items, protocol.CompletionItem{
-							Kind:  ptr(protocol.CompletionItemKindVariable),
-							Label: name,
-						})
-					}
+					items = appendVarName(items, varItems, decl.Name(), wantType)
 				case *ast.FuncDecl:
 					for _, a := range decl.Aliases {
-						items = append(items, aliasToCompletionItem(a)...)
+						items = appendAlias(items, a, wantType)
 					}
 				case *ast.StructDecl:
 					for _, a := range decl.Aliases {
-						items = append(items, aliasToCompletionItem(a)...)
+						items = appendAlias(items, a, wantType)
 					}
 					items = appendTypeName(items, decl)
 				case *ast.TypeAliasDecl:
@@ -94,6 +97,24 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 
 		return items, nil
 	})
+}
+
+func appendVarName(items []protocol.CompletionItem, varItems map[string]struct{}, name string, wantType bool) []protocol.CompletionItem {
+	if _, ok := varItems[name]; !ok && !wantType {
+		varItems[name] = struct{}{}
+		return append(items, protocol.CompletionItem{
+			Kind:  ptr(protocol.CompletionItemKindVariable),
+			Label: name,
+		})
+	}
+	return items
+}
+
+func appendAlias(items []protocol.CompletionItem, a ast.Alias, wantType bool) []protocol.CompletionItem {
+	if wantType {
+		return items
+	}
+	return append(items, aliasToCompletionItem(a)...)
 }
 
 func appendTypeName(items []protocol.CompletionItem, decl ast.Declaration) []protocol.CompletionItem {
@@ -271,6 +292,7 @@ type tableVisitor struct {
 	tempTable       *ast.SymbolTable
 	pos             protocol.Position
 	ident           *ast.Ident
+	badDecl         *ast.BadDecl
 	isDotCompletion bool
 }
 
@@ -279,6 +301,7 @@ var (
 	_ ast.ScopeSetter        = (*tableVisitor)(nil)
 	_ ast.ConditionalVisitor = (*tableVisitor)(nil)
 	_ ast.IdentVisitor       = (*tableVisitor)(nil)
+	_ ast.BadDeclVisitor     = (*tableVisitor)(nil)
 )
 
 func (*tableVisitor) Visitor() {}
@@ -306,6 +329,11 @@ func (t *tableVisitor) VisitIdent(ident *ast.Ident) ast.VisitResult {
 	if t.isDotCompletion && end.Line == pos.Line && end.Column == pos.Column-1 {
 		t.ident = ident
 	}
+	return ast.VisitRecurse
+}
+
+func (t *tableVisitor) VisitBadDecl(d *ast.BadDecl) ast.VisitResult {
+	t.badDecl = d
 	return ast.VisitRecurse
 }
 

@@ -19,7 +19,7 @@ var preparsed_duden map[string]*ast.Module
 func init() {
 	preparsed_duden = make(map[string]*ast.Module)
 	filepath.WalkDir(ddppath.Duden, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
+		if d == nil || d.IsDir() {
 			return nil
 		}
 		if filepath.Ext(path) != ".ddp" {

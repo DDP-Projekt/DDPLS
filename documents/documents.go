@@ -56,9 +56,11 @@ func (d *DocumentState) newErrorCollector() ddperror.Handler {
 
 func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
 	d.Module, err = parser.Parse(parser.Options{
-		FileName:     d.Path,
-		Source:       []byte(d.Content),
-		Modules:      merge_map_into(preparsed_duden, modules),
+		FileName: d.Path,
+		Source:   []byte(d.Content),
+		// TODO: make this work better
+		// Modules:      merge_map_into(preparsed_duden, modules),
+		Modules:      preparsed_duden,
 		ErrorHandler: errorHandler,
 	})
 	d.NeedReparse.Store(false)

@@ -96,6 +96,7 @@ func (d *diagnosticVisitor) add(err ddperror.Error) {
 		Severity: severity,
 		Source:   &errSrc,
 		Message:  fmt.Sprintf("%s (%d)", err.Msg, err.Code),
+		Code:     &protocol.IntegerOrString{Value: err.Code},
 	}
 	if err.File != d.path {
 		diagnostic.Range = protocol.Range{Start: protocol.Position{Line: 0, Character: 0}, End: protocol.Position{Line: 0, Character: 1}}

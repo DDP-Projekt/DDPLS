@@ -365,13 +365,14 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult
 		vis.items = make([]protocol.CompletionItem, 0, len(dudenPaths))
 
 		incompletePath := filepath.Dir(ast.TrimStringLit(&imprt.FileName))
+		hasDudenPrefix := strings.HasPrefix(incompletePath, "Duden")
 
-		if incompletePath == "." {
+		if incompletePath == "." || hasDudenPrefix {
 			addDudenPaths(vis.items)
 		}
 
 		searchPath := filepath.Join(filepath.Dir(vis.modPath), incompletePath)
-		if vis.isSlashCompletion && incompletePath == "Duden" {
+		if hasDudenPrefix {
 			searchPath = ddppath.Duden
 		}
 
@@ -392,6 +393,7 @@ func (vis *importVisitor) VisitImportStmt(imprt *ast.ImportStmt) ast.VisitResult
 					path = incompletePath + "/" + path
 				}
 				finalPath := strings.TrimPrefix(path, "./")
+				finalPath = strings.TrimPrefix(finalPath, ast.TrimStringLit(&imprt.FileName))
 				vis.items = append(vis.items, pathToCompletionItem(finalPath))
 			}
 		}

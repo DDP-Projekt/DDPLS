@@ -1,5 +1,7 @@
 github.com/DDP-Projekt/Kompilierer v0.4.0-alpha.0.20240810130912-13f2cd903dcb h1:CZP0ZVHQXduIWCX9UVNOg9DvDTUBDPGwuPBCxOWHkEQ=
 github.com/DDP-Projekt/Kompilierer v0.4.0-alpha.0.20240810130912-13f2cd903dcb/go.mod h1:vp0zj11n6rP/B+o7BIXmUhhjrpZNO1c7/pf+VPSHIzM=
+github.com/DDP-Projekt/Kompilierer v0.4.0-alpha.0.20241102131659-4a448417a968 h1:dZ8KbwnwHPsJ8Q2kCoErg/kZFLUhrl/1iA+Sty22Tqg=
+github.com/DDP-Projekt/Kompilierer v0.4.0-alpha.0.20241102131659-4a448417a968/go.mod h1:vp0zj11n6rP/B+o7BIXmUhhjrpZNO1c7/pf+VPSHIzM=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

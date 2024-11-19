@@ -58,10 +58,14 @@ type hoverVisitor struct {
 }
 
 var (
-	_ ast.Visitor            = (*hoverVisitor)(nil)
-	_ ast.ConditionalVisitor = (*hoverVisitor)(nil)
-	_ ast.ScopeSetter        = (*hoverVisitor)(nil)
-	_ ast.ImportStmtVisitor  = (*hoverVisitor)(nil)
+	_ ast.Visitor              = (*hoverVisitor)(nil)
+	_ ast.ConditionalVisitor   = (*hoverVisitor)(nil)
+	_ ast.ScopeSetter          = (*hoverVisitor)(nil)
+	_ ast.ImportStmtVisitor    = (*hoverVisitor)(nil)
+	_ ast.VarDeclVisitor       = (*hoverVisitor)(nil)
+	_ ast.FuncDeclVisitor      = (*hoverVisitor)(nil)
+	_ ast.TypeDefDeclVisitor   = (*hoverVisitor)(nil)
+	_ ast.TypeAliasDeclVisitor = (*hoverVisitor)(nil)
 )
 
 func (*hoverVisitor) Visitor() {}
@@ -72,6 +76,61 @@ func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
 
 func (h *hoverVisitor) SetScope(symbols *ast.SymbolTable) {
 	h.currentSymbols = symbols
+}
+
+func (h *hoverVisitor) VisitVarDecl(d *ast.VarDecl) ast.VisitResult {
+	if helper.IsInRange(d.TypeRange, h.pos) {
+		h.typeHover(d.TypeRange, d.Type)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
+func (h *hoverVisitor) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
+	if helper.IsInRange(d.ReturnTypeRange, h.pos) {
+		h.typeHover(d.ReturnTypeRange, d.ReturnType)
+		return ast.VisitBreak
+	}
+
+	for _, param := range d.Parameters {
+		if helper.IsInRange(param.TypeRange, h.pos) {
+			h.typeHover(param.TypeRange, param.Type.Type)
+			return ast.VisitBreak
+		}
+	}
+
+	return ast.VisitRecurse
+}
+
+func (h *hoverVisitor) VisitStructDecl(d *ast.StructDecl) ast.VisitResult {
+	for _, field := range d.Fields {
+		d, ok := field.(*ast.VarDecl)
+		if !ok {
+			continue
+		}
+
+		if helper.IsInRange(d.TypeRange, h.pos) {
+			h.typeHover(d.TypeRange, d.Type)
+			return ast.VisitBreak
+		}
+	}
+	return ast.VisitRecurse
+}
+
+func (h *hoverVisitor) VisitTypeAliasDecl(d *ast.TypeAliasDecl) ast.VisitResult {
+	if helper.IsInRange(d.UnderlyingRange, h.pos) {
+		h.typeHover(d.UnderlyingRange, d.Underlying)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
+func (h *hoverVisitor) VisitTypeDefDecl(d *ast.TypeDefDecl) ast.VisitResult {
+	if helper.IsInRange(d.UnderlyingRange, h.pos) {
+		h.typeHover(d.UnderlyingRange, d.Underlying)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
 }
 
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
@@ -191,17 +250,22 @@ func (h *hoverVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult 
 
 // TODO: list all public decls
 func (h *hoverVisitor) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
-	if stmt.Module == nil {
+	if len(stmt.Modules) == 0 {
 		return ast.VisitBreak
 	}
 
-	comment := getCommentDisplayString(stmt.Module.Comment)
+	if len(stmt.Modules) > 1 {
+		// TODO: implement multi module import
+		return ast.VisitBreak
+	}
+
+	comment := getCommentDisplayString(stmt.SingleModule().Comment)
 
 	variableSection := strings.Builder{}
 	functionSection := strings.Builder{}
 	structSection := strings.Builder{}
 
-	for _, decl := range stmt.Module.PublicDecls {
+	for _, decl := range stmt.SingleModule().PublicDecls {
 		switch decl := decl.(type) {
 		case *ast.VarDecl:
 			switch decl.Type.Gender() {
@@ -224,7 +288,7 @@ func (h *hoverVisitor) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
 	result := fmt.Sprintf(
 		"%s\n\n%s deklariert:\n\n```ddp\n%s\n%s\n%s\n```\n",
 		comment,
-		h.getHoverFilePath(stmt.Module.FileName),
+		h.getHoverFilePath(stmt.SingleModule().FileName),
 		structSection.String(),
 		variableSection.String(),
 		functionSection.String(),
@@ -282,5 +346,27 @@ func getCommentDisplayString(comment *token.Token) string {
 		return fmt.Sprintf("```ddp\n[\n%s\n]\n```\n", result)
 	} else {
 		return fmt.Sprintf("```ddp\n[%s]\n```\n", result)
+	}
+}
+
+func (h *hoverVisitor) typeHover(rang token.Range, typ ddptypes.Type) {
+	if typ == nil {
+		return
+	}
+
+	value := typ.String()
+	if alias, ok := typ.(*ddptypes.TypeAlias); ok {
+		value += fmt.Sprintf(" (Alias für %s)", alias.Underlying.String())
+	} else if def, ok := typ.(*ddptypes.TypeDef); ok {
+		value += fmt.Sprintf(" (definiert als %s)", def.Underlying.String())
+	}
+
+	pRang := helper.ToProtocolRange(rang)
+	h.hover = &protocol.Hover{
+		Contents: protocol.MarkupContent{
+			Kind:  protocol.MarkupKindMarkdown,
+			Value: value,
+		},
+		Range: &pRang,
 	}
 }

@@ -355,10 +355,16 @@ func (h *hoverVisitor) typeHover(rang token.Range, typ ddptypes.Type) {
 	}
 
 	value := typ.String()
-	if alias, ok := typ.(*ddptypes.TypeAlias); ok {
-		value += fmt.Sprintf(" (Alias für %s)", alias.Underlying.String())
-	} else if def, ok := typ.(*ddptypes.TypeDef); ok {
-		value += fmt.Sprintf(" (definiert als %s)", def.Underlying.String())
+	switch typ := typ.(type) {
+	case *ddptypes.StructType:
+		value += ":\n"
+		for _, field := range typ.Fields {
+			value += fmt.Sprintf("\t%s: %s\n", field.Name, field.Type.String())
+		}
+	case *ddptypes.TypeAlias:
+		value += fmt.Sprintf(" (Alias für %s)", typ.Underlying.String())
+	case *ddptypes.TypeDef:
+		value += fmt.Sprintf(" (definiert als %s)", typ.Underlying.String())
 	}
 
 	pRang := helper.ToProtocolRange(rang)

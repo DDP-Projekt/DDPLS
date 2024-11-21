@@ -124,6 +124,14 @@ func (def *definitionVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 }
 
 func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
+	if len(e.Args) != 0 {
+		for _, expr := range e.Args {
+			if helper.IsInRange(expr.GetRange(), def.pos) {
+				return ast.VisitRecurse
+			}
+		}
+	}
+
 	if fun, ok := e.Func, e.Func != nil; ok {
 		def.location = &protocol.Location{
 			URI:   def.getUri(fun),

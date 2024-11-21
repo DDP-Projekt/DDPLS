@@ -143,6 +143,14 @@ func (def *definitionVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 }
 
 func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.VisitResult {
+	if len(e.Args) != 0 {
+		for _, expr := range e.Args {
+			if helper.IsInRange(expr.GetRange(), def.pos) {
+				return ast.VisitRecurse
+			}
+		}
+	}
+
 	if struc, ok := e.Struct, e.Struct != nil; ok {
 		def.location = &protocol.Location{
 			URI:   def.getUri(struc),

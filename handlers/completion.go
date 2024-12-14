@@ -70,7 +70,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		for table != nil {
 			for name := range table.Declarations {
 				decl, _, _ := table.LookupDecl(name)
-				if decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
+				if decl.Module() == docModule && decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
 					continue
 				}
 

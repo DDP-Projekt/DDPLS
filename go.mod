@@ -3,7 +3,7 @@ module github.com/DDP-Projekt/DDPLS
 go 1.22.2
 
 require (
-	github.com/DDP-Projekt/Kompilierer v0.5.0-alpha.0.20241114105207-87725aa2f652
+	github.com/DDP-Projekt/Kompilierer v0.5.0-alpha.0.20250204153322-22e1c6b046b9
 	github.com/tliron/commonlog v0.2.8
 	github.com/tliron/glsp v0.2.2-0.20240309182338-ab78d718ad7d
 )
@@ -22,8 +22,8 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.2.0 // indirect
 	github.com/tliron/kutil v0.3.13 // indirect
-	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 )

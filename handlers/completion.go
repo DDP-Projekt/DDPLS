@@ -263,26 +263,34 @@ func appendDDPTypes(items []protocol.CompletionItem) []protocol.CompletionItem {
 }
 
 func appendDotCompletion(items []protocol.CompletionItem, ident *ast.Ident, pos protocol.Position) []protocol.CompletionItem {
-	if ident != nil && ident.Declaration != nil && ddptypes.IsStruct(ident.Declaration.Type) {
-		structType := ident.Declaration.Type.(*ddptypes.StructType)
-		for _, field := range structType.Fields {
-			items = append(items, protocol.CompletionItem{
-				Kind:     ptr(protocol.CompletionItemKindField),
-				Label:    field.Name,
-				SortText: ptr("0"),
-				TextEdit: protocol.TextEdit{
-					NewText: fmt.Sprintf("%s von %s", field.Name, ident.Declaration.Name()),
-					Range: protocol.Range{
-						Start: helper.ToProtocolPosition(ident.GetRange().Start),
-						End: protocol.Position{
-							Line:      pos.Line,
-							Character: pos.Character,
-						},
+	if ident == nil || ident.Declaration == nil {
+		return items
+	}
+	if _, isConst := ident.Declaration.(*ast.ConstDecl); isConst {
+		return items
+	}
+	if !ddptypes.IsStruct(ident.Declaration.(*ast.VarDecl).Type) {
+		return items
+	}
+
+	structType := ident.Declaration.(*ast.VarDecl).Type.(*ddptypes.StructType)
+	for _, field := range structType.Fields {
+		items = append(items, protocol.CompletionItem{
+			Kind:     ptr(protocol.CompletionItemKindField),
+			Label:    field.Name,
+			SortText: ptr("0"),
+			TextEdit: protocol.TextEdit{
+				NewText: fmt.Sprintf("%s von %s", field.Name, ident.Declaration.Name()),
+				Range: protocol.Range{
+					Start: helper.ToProtocolPosition(ident.GetRange().Start),
+					End: protocol.Position{
+						Line:      pos.Line,
+						Character: pos.Character,
 					},
 				},
-				FilterText: ptr(fmt.Sprintf("%s.%s", ident.Declaration.Name(), field.Name)),
-			})
-		}
+			},
+			FilterText: ptr(fmt.Sprintf("%s.%s", ident.Declaration.Name(), field.Name)),
+		})
 	}
 	return items
 }

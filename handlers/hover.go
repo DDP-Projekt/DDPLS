@@ -136,16 +136,25 @@ func (h *hoverVisitor) VisitTypeDefDecl(d *ast.TypeDefDecl) ast.VisitResult {
 func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 	if decl, ok := e.Declaration, e.Declaration != nil; ok {
 		header := ""
-		if decl.Mod.FileName != h.file {
-			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Mod.FileName))
+		if decl.Module().FileName != h.file {
+			header = fmt.Sprintf("%s\n", h.getHoverFilePath(decl.Module().FileName))
 		}
 		comment := trimComment(decl.Comment())
 		pRange := helper.ToProtocolRange(e.GetRange())
+
+		var typ ddptypes.Type
+		switch decl := decl.(type) {
+		case *ast.ConstDecl:
+			typ = decl.Type
+		case *ast.VarDecl:
+			typ = decl.Type
+		}
+
 		h.hover = &protocol.Hover{
 			Contents: protocol.MarkupContent{
 				Kind: protocol.MarkupKindMarkdown,
 				Value: fmt.Sprintf(
-					"%s%s\n```ddp\n%s\n```", header, comment, decl.Type,
+					"%s%s\n```ddp\n%s\n```", header, comment, typ,
 				),
 			},
 			Range: &pRange,

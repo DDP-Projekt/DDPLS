@@ -28,6 +28,14 @@ func NewDDPLS() *DDPLS {
 		dm:               documents.NewDocumentManager(),
 		diagnosticSender: handlers.CreateSendDiagnostics(),
 	}
+
+	CustomRequests := []protocol.CustomRequestHandler{
+		{
+			Func:   handlers.CreateAstRequestHandler(ls.dm),
+			Method: "custom/ast",
+		},
+	}
+
 	ls.handler = protocol.Handler{
 		Initialize:                      ls.createInitialize(),
 		Initialized:                     initialized,
@@ -46,7 +54,9 @@ func NewDDPLS() *DDPLS {
 		TextDocumentRename:              handlers.CreateTextDocumentRename(ls.dm),
 		TextDocumentPrepareRename:       handlers.CreateTextDocumentPrepareRename(ls.dm),
 		TextDocumentDocumentHighlight:   handlers.CreateTextDocumentDocumentHighlight(ls.dm),
+		CustomRequest:                   CustomRequests,
 	}
+
 	ls.Server = lspserver.NewServer(&ls.handler, lsName, false)
 	return ls
 }

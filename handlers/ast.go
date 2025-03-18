@@ -31,8 +31,10 @@ func CreateAstRequestHandler(dm *documents.DocumentManager) protocol.CustomReque
 		for _, v := range act.Module.Ast.Statements {
 			stmtRange := helper.ToProtocolRange(v.GetRange())
 
-			if req.Range != nil && !(stmtRange.Start.Line >= req.Range.Start.Line && stmtRange.Start.Character >= req.Range.Start.Character &&
-				stmtRange.End.Line <= req.Range.End.Line && stmtRange.End.Character <= req.Range.End.Character) {
+			if req.Range != nil && !(stmtRange.Start.Line >= req.Range.Start.Line &&
+				(stmtRange.Start.Line > req.Range.Start.Line || stmtRange.Start.Character >= req.Range.Start.Character) &&
+				stmtRange.End.Line <= req.Range.End.Line &&
+				(stmtRange.End.Line < req.Range.End.Line || stmtRange.End.Character <= req.Range.End.Character)) {
 				continue
 			}
 
@@ -48,7 +50,6 @@ type TreeItem struct {
 	CollapsibleState int            `json:"collapsibleState"`
 	Description      string         `json:"description"`
 	IconId           string         `json:"iconId"`
-	Tooltip          string         `json:"-"`
 	Range            protocol.Range `json:"range"`
 }
 
@@ -64,7 +65,6 @@ func NewDataItem(label string, data string, children []TreeItem) TreeItem {
 		Children:         children,
 		CollapsibleState: childrenState,
 		IconId:           "",
-		Tooltip:          "",
 	}
 }
 
@@ -81,7 +81,6 @@ func NewNodeItem(node ast.Node, description string, children []TreeItem, iconID 
 		CollapsibleState: childrenState,
 		Description:      description,
 		IconId:           iconID,
-		Tooltip:          fmt.Sprintf("Start: [%d, %d]\nEnd: [%d, %d]", rang.Start.Line, rang.Start.Column, rang.End.Line, rang.End.Column),
 		Range:            helper.ToProtocolRange(rang),
 	}
 }

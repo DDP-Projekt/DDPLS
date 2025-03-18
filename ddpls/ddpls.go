@@ -32,7 +32,7 @@ func NewDDPLS() *DDPLS {
 	CustomRequests := []protocol.CustomRequestHandler{
 		{
 			Func:   handlers.CreateAstRequestHandler(ls.dm),
-			Method: "custom/ast",
+			Method: "ast/getTree",
 		},
 	}
 

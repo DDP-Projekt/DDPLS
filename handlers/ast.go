@@ -204,12 +204,19 @@ func makeTreeNode(node ast.Node) TreeItem {
 			NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil),
 		}, "symbol-constant")
 	case *ast.VarDecl:
-		return NewNodeItem(node, node.Name(), []TreeItem{
+		children := []TreeItem{
 			makeTreeNode(node.InitVal),
-			NewDataItem("Type", node.Type.String(), nil),
+		}
+		if node.Type != nil {
+			children = append(children, NewDataItem("Type", node.Type.String(), nil))
+		}
+
+		children = append(children,
 			NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil),
 			NewDataItem("IsExternVisible", fmt.Sprintf("%v", node.IsExternVisible), nil),
-		}, "symbol-variable")
+		)
+
+		return NewNodeItem(node, node.Name(), children, "symbol-variable")
 	case *ast.FuncDecl:
 		children := make([]TreeItem, 0)
 		aliase := make([]TreeItem, 0)

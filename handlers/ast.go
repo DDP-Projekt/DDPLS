@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
+	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/tliron/glsp"
@@ -12,7 +13,8 @@ import (
 )
 
 type AstRequest struct {
-	Path string `json:"path"`
+	Path  string          `json:"path"`
+	Range *protocol.Range `json:"range"`
 }
 
 func CreateAstRequestHandler(dm *documents.DocumentManager) protocol.CustomRequestFunc {
@@ -27,6 +29,13 @@ func CreateAstRequestHandler(dm *documents.DocumentManager) protocol.CustomReque
 
 		items := make([]TreeItem, 0)
 		for _, v := range act.Module.Ast.Statements {
+			stmtRange := helper.ToProtocolRange(v.GetRange())
+
+			if req.Range != nil && !(stmtRange.Start.Line >= req.Range.Start.Line && stmtRange.Start.Character >= req.Range.Start.Character &&
+				stmtRange.End.Line <= req.Range.End.Line && stmtRange.End.Character <= req.Range.End.Character) {
+				continue
+			}
+
 			items = append(items, makeTreeNode(v))
 		}
 		return items, nil

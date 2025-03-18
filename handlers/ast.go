@@ -43,12 +43,13 @@ func CreateAstRequestHandler(dm *documents.DocumentManager) protocol.CustomReque
 }
 
 type TreeItem struct {
-	Label            string     `json:"label"`
-	Children         []TreeItem `json:"children"`
-	CollapsibleState int        `json:"collapsibleState"`
-	Description      string     `json:"description"`
-	IconId           string     `json:"iconId"`
-	Tooltip          string     `json:"tooltip"`
+	Label            string         `json:"label"`
+	Children         []TreeItem     `json:"children"`
+	CollapsibleState int            `json:"collapsibleState"`
+	Description      string         `json:"description"`
+	IconId           string         `json:"iconId"`
+	Tooltip          string         `json:"-"`
+	Range            protocol.Range `json:"range"`
 }
 
 func NewDataItem(label string, data string, children []TreeItem) TreeItem {
@@ -81,6 +82,7 @@ func NewNodeItem(node ast.Node, description string, children []TreeItem, iconID 
 		Description:      description,
 		IconId:           iconID,
 		Tooltip:          fmt.Sprintf("Start: [%d, %d]\nEnd: [%d, %d]", rang.Start.Line, rang.Start.Column, rang.End.Line, rang.End.Column),
+		Range:            helper.ToProtocolRange(rang),
 	}
 }
 

@@ -87,7 +87,7 @@ func NewNodeItem(node ast.Node, description string, children []TreeItem, iconID 
 
 func makeTreeNode(node ast.Node) TreeItem {
 	if node == nil {
-		panic("AAH NIL!!")
+		panic("nil Node passed into makeTreeNode()")
 	}
 
 	switch node := node.(type) {
@@ -364,5 +364,5 @@ func makeTreeNode(node ast.Node) TreeItem {
 		return NewNodeItem(node, "", nil, "ellipsis")
 	}
 
-	panic("you missed one")
+	return NewNodeItem(node, "This node has not been implemented", nil, "question")
 }

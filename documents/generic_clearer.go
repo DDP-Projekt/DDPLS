@@ -22,7 +22,7 @@ func (c *genericsClearer) SetVisitor(vis ast.FullVisitor) {
 
 func (c *genericsClearer) VisitFuncCall(call *ast.FuncCall) ast.VisitResult {
 	if ast.IsGenericInstantiation(call.Func) {
-		delete(call.Func.GenericDecl.Generic.Instantiations, c.mod)
+		delete(call.Func.GenericInstantiation.GenericDecl.Generic.Instantiations, c.mod)
 		c.vis.VisitFuncDecl(call.Func)
 	}
 	return ast.VisitRecurse

@@ -143,9 +143,13 @@ func (dm *DocumentManager) Get(vscURI string) (*DocumentState, bool) {
 func (dm *DocumentManager) GetFromMod(mod *ast.Module) (*DocumentState, bool) {
 	dm.mu.Lock()
 	defer dm.mu.Unlock()
-	for _, v := range dm.documentStates {
-		if v.Module == mod {
-			return v, true
+	for _, doc := range dm.documentStates {
+		if doc.Module == mod {
+			ok := true
+			if doc.NeedReparse.Load() {
+				ok = dm.reParse(doc.Uri, doc.newErrorCollector()) == nil
+			}
+			return doc, ok
 		}
 	}
 	return nil, false

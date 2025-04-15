@@ -195,12 +195,25 @@ func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 		declRange = helper.ToProtocolRange(e.Func.GetRange())
 	}
 
-	moduleContent, is_same_module := h.getDifferentModContent(e.Func.Mod)
+	genericMod := e.Func.Mod
+	if ast.IsGenericInstantiation(e.Func) {
+		genericMod = e.Func.GenericInstantiation.GenericDecl.Mod
+	}
+
+	moduleContent, is_same_module := h.getDifferentModContent(genericMod)
 
 	// if the function is in another module, we display the path to that module
 	header := ""
 	if !is_same_module {
-		header = h.getHoverFilePath(e.Func.Mod.FileName)
+		header = h.getHoverFilePath(genericMod.FileName)
+	}
+
+	if ast.IsGenericInstantiation(e.Func) {
+		header += "\n\n"
+		for name, typ := range e.Func.GenericInstantiation.Types {
+			header += name + " = " + typ.String() + ", "
+		}
+		header = header[:len(header)-2]
 	}
 
 	start, end := declRange.IndexesIn(moduleContent)

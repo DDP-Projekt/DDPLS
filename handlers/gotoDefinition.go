@@ -163,7 +163,7 @@ func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.Visit
 
 func (def *definitionVisitor) getUri(decl ast.Declaration) string {
 	if funDecl, ok := decl.(*ast.FuncDecl); ok && ast.IsGenericInstantiation(funDecl) {
-		return def.getUri(funDecl.GenericDecl)
+		return def.getUri(funDecl.GenericInstantiation.GenericDecl)
 	}
 
 	uri_ := uri.FromPath(decl.Module().FileName)

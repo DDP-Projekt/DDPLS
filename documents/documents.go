@@ -3,6 +3,7 @@ package documents
 import (
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -63,12 +64,14 @@ func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHa
 		// clear generic instantiations to not leak memory
 		ast.VisitModule(d.Module, &genericsClearer{mod: d.Module})
 
+		duden := make(map[string]*ast.Module, len(preparsed_duden))
+		maps.Copy(duden, preparsed_duden)
 		d.Module, err = parser.Parse(parser.Options{
 			FileName: d.Path,
 			Source:   []byte(d.Content),
 			// TODO: make this work better
 			// Modules:      merge_map_into(preparsed_duden, modules),
-			Modules:      preparsed_duden,
+			Modules:      duden,
 			ErrorHandler: errorHandler,
 		})
 	}

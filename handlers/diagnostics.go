@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"slices"
 	"time"
 
 	"github.com/DDP-Projekt/DDPLS/documents"
@@ -13,7 +14,6 @@ import (
 	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/src/token"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -23,11 +23,25 @@ type DiagnosticSender func(*documents.DocumentManager, glsp.NotifyFunc, string, 
 type diagnosticParams struct {
 	dm     *documents.DocumentManager
 	notify glsp.NotifyFunc
-	vscURI string
+	vscURI uri.URI
 	delay  bool
 }
 
-func (d *diagnosticParams) sendDiagnostics() {
+type modImport struct {
+	mod   *ast.Module
+	imprt *ast.ImportStmt
+}
+
+func sendDiagnostics(params *diagnosticParams) {
+	sendDiagnosticsRec(params, make(map[uri.URI]struct{}), nil, nil)
+}
+
+func sendDiagnosticsRec(params *diagnosticParams, alreadySent map[uri.URI]struct{}, mod *ast.Module, externalErrors []*ddperror.Error) {
+	if _, ok := alreadySent[params.vscURI]; ok {
+		return
+	}
+	alreadySent[params.vscURI] = struct{}{}
+
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("panic of type %s in diagnostics: %v", reflect.TypeOf(err), err)
@@ -36,31 +50,61 @@ func (d *diagnosticParams) sendDiagnostics() {
 	}()
 
 	var (
-		docMod *ast.Module
-		docUri uri.URI
-		errs   []ddperror.Error
+		docMod = mod
+		docUri = params.vscURI
+		errs   = externalErrors
 	)
-	if doc, ok := d.dm.Get(d.vscURI); !ok {
-		log.Warningf("Could not retrieve for diagnostics document %s", d.vscURI)
+	if doc, ok := params.dm.Get(string(params.vscURI)); !ok && mod == nil {
+		log.Warningf("Could not retrieve for diagnostics document %s (%s)", params.vscURI)
 		return
-	} else {
+	} else if ok {
 		docMod = doc.Module
 		docUri = doc.Uri
-		errs = doc.LatestErrors
+		errs = toPointerSlice(doc.LatestErrors)
 	}
+
 	path := docUri.Filepath()
+	diagnostics := make([]protocol.Diagnostic, 0, len(errs))
+	faultyImports := make(map[string][]*ddperror.Error, len(docMod.Imports))
+	moduleMap := make(map[string]modImport, len(docMod.Imports))
 
-	visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
+	for _, err := range errs {
+		if err.File == path {
+			diagnostics = append(diagnostics, errToDiagnostic(err, path))
+			continue
+		}
 
-	for i := range errs {
-		visitor.add(errs[i])
+		externalErrors := faultyImports[err.File]
+		faultyImports[err.File] = append(externalErrors, err)
+
+		if _, ok := moduleMap[err.File]; !ok {
+			imprt := findModule(err.File, params.dm, docMod.Imports)
+			if imprt.mod != nil {
+				moduleMap[err.File] = imprt
+			}
+		}
 	}
 
-	ast.VisitModuleRec(docMod, visitor)
+	for path, errs := range faultyImports {
+		imprt := moduleMap[path]
 
-	go d.notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-		URI:         d.vscURI,
-		Diagnostics: visitor.diagnostics,
+		if imprt.imprt != nil {
+			log.Infof("addding imprt for %s (%d)", path, len(errs))
+			diagnostics = append(diagnostics, newImportDiagnostic(path, errs, imprt.imprt))
+		} else {
+			log.Infof("imprt for %s is nil %d", path, len(errs))
+		}
+
+		params := diagnosticParams{params.dm, params.notify, uri.FromPath(path), false}
+		sendDiagnosticsRec(&params, alreadySent, imprt.mod, errs)
+
+		continue
+	}
+
+	log.Infof("notifying %s of %d diagnostics", params.vscURI, len(diagnostics))
+	go params.notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+		URI:         string(params.vscURI),
+		Diagnostics: diagnostics,
 	})
 }
 
@@ -78,19 +122,19 @@ func CreateSendDiagnostics(ctx context.Context) DiagnosticSender {
 		for {
 			select {
 			case new_params := <-diagnosticChan:
-				if params.vscURI != new_params.vscURI {
-					params.sendDiagnostics()
+				if params.vscURI != new_params.vscURI && params.vscURI != "" {
+					sendDiagnostics(&params)
 				}
 
 				params = new_params
 				if params.delay {
 					diagnosticsTimer.Reset(time.Millisecond * 500)
 				} else {
-					params.sendDiagnostics()
+					sendDiagnostics(&params)
 				}
 			case <-diagnosticsTimer.C:
 				diagnosticsTimer.Stop()
-				params.sendDiagnostics()
+				sendDiagnostics(&params)
 			case <-done:
 				break infinite_loop
 			}
@@ -98,40 +142,8 @@ func CreateSendDiagnostics(ctx context.Context) DiagnosticSender {
 	}()
 
 	return func(dm *documents.DocumentManager, notify glsp.NotifyFunc, vscURI string, delay bool) {
-		diagnosticChan <- diagnosticParams{dm, notify, vscURI, delay}
+		diagnosticChan <- diagnosticParams{dm, notify, uri.FromURI(vscURI), delay}
 	}
-}
-
-type diagnosticVisitor struct {
-	path        string
-	diagnostics []protocol.Diagnostic
-}
-
-var (
-	_ ast.Visitor        = (*diagnosticVisitor)(nil)
-	_ ast.BadDeclVisitor = (*diagnosticVisitor)(nil)
-	_ ast.BadExprVisitor = (*diagnosticVisitor)(nil)
-	_ ast.BadStmtVisitor = (*diagnosticVisitor)(nil)
-)
-
-func (d *diagnosticVisitor) add(err ddperror.Error) {
-	severity := &severityError
-	if err.Level == ddperror.LEVEL_WARN {
-		severity = &severityWarning
-	}
-
-	diagnostic := protocol.Diagnostic{
-		Range:    helper.ToProtocolRange(err.Range),
-		Severity: severity,
-		Source:   &errSrc,
-		Message:  fmt.Sprintf("%s (%d)", err.Msg, err.Code),
-		Code:     &protocol.IntegerOrString{Value: err.Code},
-	}
-	if err.File != d.path {
-		diagnostic.Range = protocol.Range{Start: protocol.Position{Line: 0, Character: 0}, End: protocol.Position{Line: 0, Character: 1}}
-		diagnostic.Message = err.File + ": " + diagnostic.Message
-	}
-	d.diagnostics = append(d.diagnostics, diagnostic)
 }
 
 var (
@@ -140,21 +152,90 @@ var (
 	errSrc          = "ddp"
 )
 
-func (*diagnosticVisitor) Visitor() {}
-
-func (d *diagnosticVisitor) VisitBadDecl(decl *ast.BadDecl) ast.VisitResult {
-	if decl.Tok.Type != token.FUNKTION { // bad function declaration errors were already reported
-		d.add(decl.Err)
+func errToRelatedInformation(err *ddperror.Error) protocol.DiagnosticRelatedInformation {
+	return protocol.DiagnosticRelatedInformation{
+		Location: protocol.Location{
+			URI:   protocol.DocumentUri(uri.FromPath(err.File)),
+			Range: helper.ToProtocolRange(err.Range),
+		},
+		Message: err.Msg,
 	}
-	return ast.VisitRecurse
 }
 
-func (d *diagnosticVisitor) VisitBadExpr(e *ast.BadExpr) ast.VisitResult {
-	d.add(e.Err)
-	return ast.VisitRecurse
+func diagnosticRelatedInformationFromErr(err *ddperror.Error) []protocol.DiagnosticRelatedInformation {
+	if len(err.WrappedGenericErrors) == 0 {
+		return nil
+	}
+
+	result := make([]protocol.DiagnosticRelatedInformation, 0, len(err.WrappedGenericErrors))
+	for _, err := range err.WrappedGenericErrors {
+		result = append(result, errToRelatedInformation(&err))
+		result = append(result, diagnosticRelatedInformationFromErr(&err)...)
+	}
+	return result
 }
 
-func (d *diagnosticVisitor) VisitBadStmt(s *ast.BadStmt) ast.VisitResult {
-	d.add(s.Err)
-	return ast.VisitRecurse
+func errToDiagnostic(err *ddperror.Error, docPath string) protocol.Diagnostic {
+	severity := &severityError
+	if err.Level == ddperror.LEVEL_WARN {
+		severity = &severityWarning
+	}
+
+	return protocol.Diagnostic{
+		Range:              helper.ToProtocolRange(err.Range),
+		Severity:           severity,
+		Source:             &errSrc,
+		Message:            fmt.Sprintf("%s (%d)", err.Msg, err.Code),
+		Code:               &protocol.IntegerOrString{Value: err.Code},
+		RelatedInformation: diagnosticRelatedInformationFromErr(err),
+	}
+}
+
+func newImportDiagnostic(path string, errs []*ddperror.Error, imprt *ast.ImportStmt) protocol.Diagnostic {
+	related := make([]protocol.DiagnosticRelatedInformation, 0, len(errs))
+
+	for _, err := range errs {
+		related = append(related, errToRelatedInformation(err))
+	}
+
+	return protocol.Diagnostic{
+		Range:              helper.ToProtocolRange(imprt.GetRange()),
+		Severity:           &severityError,
+		Source:             &errSrc,
+		Message:            fmt.Sprintf("Das eingebundene Modul '%s' enthält Fehler", path),
+		Code:               &protocol.IntegerOrString{Value: ddperror.MISC_INCLUDE_ERROR},
+		RelatedInformation: related,
+	}
+}
+
+func findModule(path string, dm *documents.DocumentManager, imports []*ast.ImportStmt) modImport {
+	// if doc, ok := dm.Get(string(uri.FromPath(path))); ok {
+	// 	return doc.Module
+	// }
+
+	for _, imprt := range imports {
+		index := slices.IndexFunc(imprt.Modules, func(mod *ast.Module) bool {
+			return mod.FileName == path
+		})
+
+		if index != -1 {
+			return modImport{imprt.Modules[index], imprt}
+		}
+
+		for _, mod := range imprt.Modules {
+			if imprt := findModule(path, dm, mod.Imports); imprt.mod != nil {
+				return imprt
+			}
+		}
+	}
+
+	return modImport{}
+}
+
+func toPointerSlice[T any](slice []T) []*T {
+	result := make([]*T, len(slice))
+	for i := range slice {
+		result[i] = &slice[i]
+	}
+	return result
 }

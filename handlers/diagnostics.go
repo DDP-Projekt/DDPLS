@@ -89,10 +89,7 @@ func sendDiagnosticsRec(params *diagnosticParams, alreadySent map[uri.URI]struct
 		imprt := moduleMap[path]
 
 		if imprt.imprt != nil {
-			log.Infof("addding imprt for %s (%d)", path, len(errs))
 			diagnostics = append(diagnostics, newImportDiagnostic(path, errs, imprt.imprt))
-		} else {
-			log.Infof("imprt for %s is nil %d", path, len(errs))
 		}
 
 		params := diagnosticParams{params.dm, params.notify, uri.FromPath(path), false}
@@ -101,7 +98,6 @@ func sendDiagnosticsRec(params *diagnosticParams, alreadySent map[uri.URI]struct
 		continue
 	}
 
-	log.Infof("notifying %s of %d diagnostics", params.vscURI, len(diagnostics))
 	go params.notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 		URI:         string(params.vscURI),
 		Diagnostics: diagnostics,

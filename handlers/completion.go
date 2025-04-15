@@ -68,7 +68,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 		varItems := make(map[string]struct{}, 16)
 		wantType := latestError != nil && latestError.Code == ddperror.SYN_EXPECTED_TYPENAME
 		for table != nil {
-			for name := range table.Declarations {
+			for name := range table.(*ast.BasicSymbolTable).Declarations {
 				decl, _, _ := table.LookupDecl(name)
 				if decl.Module() == docModule && decl.GetRange().Start.IsBehind(helper.FromProtocolPosition(params.Position)) {
 					continue
@@ -92,7 +92,7 @@ func CreateTextDocumentCompletion(dm *documents.DocumentManager) protocol.TextDo
 					items = appendTypeName(items, decl)
 				}
 			}
-			table = table.Enclosing
+			table = table.Enclosing()
 		}
 
 		return items, nil
@@ -296,8 +296,8 @@ func appendDotCompletion(items []protocol.CompletionItem, ident *ast.Ident, pos 
 }
 
 type tableVisitor struct {
-	Table           *ast.SymbolTable
-	tempTable       *ast.SymbolTable
+	Table           ast.SymbolTable
+	tempTable       ast.SymbolTable
 	pos             protocol.Position
 	ident           *ast.Ident
 	badDecl         *ast.BadDecl
@@ -314,7 +314,7 @@ var (
 
 func (*tableVisitor) Visitor() {}
 
-func (t *tableVisitor) SetScope(symbols *ast.SymbolTable) {
+func (t *tableVisitor) SetScope(symbols ast.SymbolTable) {
 	t.tempTable = symbols
 }
 

@@ -162,6 +162,10 @@ func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.Visit
 }
 
 func (def *definitionVisitor) getUri(decl ast.Declaration) string {
+	if funDecl, ok := decl.(*ast.FuncDecl); ok && ast.IsGenericInstantiation(funDecl) {
+		return def.getUri(funDecl.GenericDecl)
+	}
+
 	uri_ := uri.FromPath(decl.Module().FileName)
 	if decl.Module() == def.docMod {
 		uri_ = def.docUri
@@ -177,7 +181,7 @@ func (def *definitionVisitor) gotoType(typ ddptypes.Type) {
 	}
 
 	if lt, ok := typ.(*ddptypes.ListType); ok {
-		def.gotoType(lt.Underlying)
+		def.gotoType(lt.ElementType)
 		return
 	}
 

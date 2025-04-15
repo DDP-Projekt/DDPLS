@@ -93,6 +93,7 @@ type semanticTokenizer struct {
 	tokens          []highlightedToken
 	doc             *documents.DocumentState
 	shouldVisitFunc func(node ast.Node) bool
+	vis             ast.FullVisitor
 }
 
 var (
@@ -101,6 +102,10 @@ var (
 )
 
 func (t *semanticTokenizer) Visitor() {}
+
+func (t *semanticTokenizer) SetVisitor(vis ast.FullVisitor) {
+	t.vis = vis
+}
 
 func (t *semanticTokenizer) ShouldVisit(node ast.Node) bool {
 	if t.shouldVisitFunc != nil {
@@ -144,6 +149,12 @@ func (t *semanticTokenizer) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 		t.add(newHightlightedToken(typeRange, t.doc, protocol.SemanticTokenTypeType, nil))
 	}
 	t.add(newHightlightedToken(d.ReturnTypeRange, t.doc, protocol.SemanticTokenTypeType, nil))
+
+	if instantiation := getRandomGenericInstantiation(d); instantiation != nil {
+		t.vis.VisitFuncDecl(instantiation)
+		return ast.VisitSkipChildren
+	}
+
 	return ast.VisitRecurse
 }
 
@@ -360,4 +371,22 @@ func bitFlag(modifier protocol.SemanticTokenModifier) protocol.UInteger {
 		return 0b1000000000
 	}
 	return 0
+}
+
+func getRandomGenericInstantiation(d *ast.FuncDecl) *ast.FuncDecl {
+	if !ast.IsGeneric(d) || len(d.Generic.Instantiations) == 0 {
+		return nil
+	}
+
+	if instantiations, ok := d.Generic.Instantiations[d.Mod]; ok && len(instantiations) > 0 {
+		return instantiations[0]
+	}
+
+	for _, inst := range d.Generic.Instantiations {
+		if len(inst) > 0 {
+			return inst[0]
+		}
+	}
+
+	return nil
 }

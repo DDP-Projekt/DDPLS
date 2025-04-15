@@ -51,10 +51,11 @@ func trimComment(comment *token.Token) string {
 type hoverVisitor struct {
 	hover          *protocol.Hover
 	pos            protocol.Position
-	currentSymbols *ast.SymbolTable
+	currentSymbols ast.SymbolTable
 	docContent     string
 	file           string
 	dm             *documents.DocumentManager
+	vis            ast.FullVisitor
 }
 
 var (
@@ -74,7 +75,11 @@ func (h *hoverVisitor) ShouldVisit(node ast.Node) bool {
 	return helper.IsInRange(node.GetRange(), h.pos)
 }
 
-func (h *hoverVisitor) SetScope(symbols *ast.SymbolTable) {
+func (h *hoverVisitor) SetVisitor(vis ast.FullVisitor) {
+	h.vis = vis
+}
+
+func (h *hoverVisitor) SetScope(symbols ast.SymbolTable) {
 	h.currentSymbols = symbols
 }
 
@@ -97,6 +102,11 @@ func (h *hoverVisitor) VisitFuncDecl(d *ast.FuncDecl) ast.VisitResult {
 			h.typeHover(param.TypeRange, param.Type.Type)
 			return ast.VisitBreak
 		}
+	}
+
+	if instantiation := getRandomGenericInstantiation(d); instantiation != nil {
+		h.vis.VisitFuncDecl(instantiation)
+		return ast.VisitSkipChildren
 	}
 
 	return ast.VisitRecurse

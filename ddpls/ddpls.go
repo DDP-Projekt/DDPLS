@@ -1,6 +1,8 @@
 package ddpls
 
 import (
+	"context"
+
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/handlers"
 	"github.com/tliron/glsp"
@@ -23,10 +25,10 @@ type DDPLS struct {
 	Server           *lspserver.Server
 }
 
-func NewDDPLS() *DDPLS {
+func NewDDPLS(ctx context.Context) *DDPLS {
 	ls := &DDPLS{
 		dm:               documents.NewDocumentManager(),
-		diagnosticSender: handlers.CreateSendDiagnostics(),
+		diagnosticSender: handlers.CreateSendDiagnostics(ctx),
 	}
 
 	CustomRequests := []protocol.CustomRequestHandler{

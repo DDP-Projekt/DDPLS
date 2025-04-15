@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"runtime/pprof"
@@ -21,7 +22,7 @@ func main() {
 	// This increases logging verbosity (optional)
 	logging.Configure(1, nil)
 
-	ls := ddpls.NewDDPLS()
+	ls := ddpls.NewDDPLS(context.Background())
 
 	if cpuprofile != "" {
 		f, err := os.Create(cpuprofile)

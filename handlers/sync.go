@@ -35,7 +35,7 @@ func CreateTextDocumentDidChange(dm *documents.DocumentManager, sendDiagnostics 
 			}
 			doc.NeedReparse.Store(true)
 		}
-		sendDiagnostics(dm, context.Notify, string(doc.Uri), true)
+		sendDiagnostics(dm, context.Notify, params.TextDocument.URI, true)
 		return nil
 	})
 }

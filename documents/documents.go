@@ -54,15 +54,25 @@ func (d *DocumentState) newErrorCollector() ddperror.Handler {
 	}
 }
 
+var n = 0
+
 func (d *DocumentState) reParseInContext(modules map[string]*ast.Module, errorHandler ddperror.Handler) (err error) {
-	d.Module, err = parser.Parse(parser.Options{
-		FileName: d.Path,
-		Source:   []byte(d.Content),
-		// TODO: make this work better
-		// Modules:      merge_map_into(preparsed_duden, modules),
-		Modules:      preparsed_duden,
-		ErrorHandler: errorHandler,
-	})
+	if duden_mod, ok := preparsed_duden[d.Path]; ok {
+		d.Module = duden_mod
+	} else {
+		// clear generic instantiations to not leak memory
+		ast.VisitModule(d.Module, &genericsClearer{mod: d.Module})
+
+		d.Module, err = parser.Parse(parser.Options{
+			FileName: d.Path,
+			Source:   []byte(d.Content),
+			// TODO: make this work better
+			// Modules:      merge_map_into(preparsed_duden, modules),
+			Modules:      preparsed_duden,
+			ErrorHandler: errorHandler,
+		})
+	}
+
 	d.NeedReparse.Store(false)
 
 	return err

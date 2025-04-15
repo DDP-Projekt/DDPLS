@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"runtime/debug"
@@ -19,57 +20,85 @@ import (
 
 type DiagnosticSender func(*documents.DocumentManager, glsp.NotifyFunc, string, bool)
 
-func CreateSendDiagnostics() DiagnosticSender {
-	refreshing := false
-	return func(dm *documents.DocumentManager, notify glsp.NotifyFunc, vscURI string, delay bool) {
-		// TODO: fix bad synchronization
-		if refreshing {
-			return
+type diagnosticParams struct {
+	dm     *documents.DocumentManager
+	notify glsp.NotifyFunc
+	vscURI string
+	delay  bool
+}
+
+func (d *diagnosticParams) sendDiagnostics() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("panic of type %s in diagnostics: %v", reflect.TypeOf(err), err)
+			log.Errorf("stack trace: %s", string(debug.Stack()))
 		}
-		refreshing = true
+	}()
 
-		go func(vscURI string) {
-			// TODO: fix bad synchronization
-			if delay {
-				time.Sleep(500 * time.Millisecond)
-			}
-			refreshing = false
+	var (
+		docMod *ast.Module
+		docUri uri.URI
+		errs   []ddperror.Error
+	)
+	if doc, ok := d.dm.Get(d.vscURI); !ok {
+		log.Warningf("Could not retrieve for diagnostics document %s", d.vscURI)
+		return
+	} else {
+		docMod = doc.Module
+		docUri = doc.Uri
+		errs = doc.LatestErrors
+	}
+	path := docUri.Filepath()
 
-			defer func() {
-				if err := recover(); err != nil {
-					log.Errorf("panic of type %s in diagnostics: %v", reflect.TypeOf(err), err)
-					log.Errorf("stack trace: %s", string(debug.Stack()))
+	visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
+
+	for i := range errs {
+		visitor.add(errs[i])
+	}
+
+	ast.VisitModuleRec(docMod, visitor)
+
+	go d.notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+		URI:         d.vscURI,
+		Diagnostics: visitor.diagnostics,
+	})
+}
+
+func CreateSendDiagnostics(ctx context.Context) DiagnosticSender {
+	// initialize the timer stopped
+	diagnosticsTimer := time.NewTimer(time.Nanosecond)
+	diagnosticsTimer.Stop()
+
+	done := ctx.Done()
+	diagnosticChan := make(chan diagnosticParams)
+
+	go func() {
+		params := diagnosticParams{}
+	infinite_loop:
+		for {
+			select {
+			case new_params := <-diagnosticChan:
+				if params.vscURI != new_params.vscURI {
+					params.sendDiagnostics()
 				}
-			}()
 
-			var (
-				docMod *ast.Module
-				docUri uri.URI
-				errs   []ddperror.Error
-			)
-			if doc, ok := dm.Get(vscURI); !ok {
-				log.Warningf("Could not retrieve document %s", vscURI)
-				return
-			} else {
-				docMod = doc.Module
-				docUri = doc.Uri
-				errs = doc.LatestErrors
+				params = new_params
+				if params.delay {
+					diagnosticsTimer.Reset(time.Millisecond * 500)
+				} else {
+					params.sendDiagnostics()
+				}
+			case <-diagnosticsTimer.C:
+				diagnosticsTimer.Stop()
+				params.sendDiagnostics()
+			case <-done:
+				break infinite_loop
 			}
-			path := docUri.Filepath()
+		}
+	}()
 
-			visitor := &diagnosticVisitor{path: path, diagnostics: make([]protocol.Diagnostic, 0)}
-
-			for i := range errs {
-				visitor.add(errs[i])
-			}
-
-			ast.VisitModuleRec(docMod, visitor)
-
-			go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-				URI:         vscURI,
-				Diagnostics: visitor.diagnostics,
-			})
-		}(vscURI)
+	return func(dm *documents.DocumentManager, notify glsp.NotifyFunc, vscURI string, delay bool) {
+		diagnosticChan <- diagnosticParams{dm, notify, vscURI, delay}
 	}
 }
 

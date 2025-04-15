@@ -1,5 +1,5 @@
-github.com/DDP-Projekt/Kompilierer v0.5.0-alpha.0.20250204153322-22e1c6b046b9 h1:J80ut6zkCCwEBh0IoKFtENJVmssq5K8Fb539di857DY=
-github.com/DDP-Projekt/Kompilierer v0.5.0-alpha.0.20250204153322-22e1c6b046b9/go.mod h1:FL5eYp6AuDeKh15doNtcOyESwUg7JmVOhOi4J/EepFY=
+github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250414071427-7f063071a1ef h1:E17LFXgjcQU0ZNRHZ6n8Jh9BZAVHDIBd+HoK4/zRenU=
+github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250414071427-7f063071a1ef/go.mod h1:1OiPJ68MnwUSjuB8zxVmhxRpb9eBe0sS3aia9F3akkg=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242 h1:83KQL7kA1eNW+aL43H3AkjRy1hSa8Okb14D2weULdEo=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242/go.mod h1:0mr4+bYwGddJfGuaxnUZBSxkshSzFOIyTmBRvfJDBo4=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
@@ -43,6 +43,8 @@ github.com/tliron/kutil v0.3.25 h1:oaPN6K0zsH3KcVnsocA3kAlfR0XYDzADob6xdjqe56k=
 github.com/tliron/kutil v0.3.25/go.mod h1:ZvOJuF6PTGvjfHmn2dFcgz+EDEzRQqQUztK+7djlXIw=
 golang.org/x/crypto v0.32.0 h1:euUpcYgM8WcP71gNpTqQCn6rC2t6ULUPiOzfWaXVVfc=
 golang.org/x/crypto v0.32.0/go.mod h1:ZnnJkOaASj8g0AjIduWNlq2NRxL0PlBrbKVyZ6V/Ugc=
+golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 h1:yixxcjnhBmY0nkL253HFVIm0JsFHwrHdT3Yh6szTnfY=
+golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8/go.mod h1:jj3sYF3dwk5D+ghuXyeI3r5MFf+NT2An6/9dOA95KSI=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.29.0 h1:TPYlXGxvx1MGTn2GiZDhnjPA9wZzZeGKHHmKhHYvgaU=
 golang.org/x/sys v0.29.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=

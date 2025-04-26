@@ -43,14 +43,15 @@ type definitionVisitor struct {
 }
 
 var (
-	_ ast.Visitor              = (*definitionVisitor)(nil)
-	_ ast.ConditionalVisitor   = (*definitionVisitor)(nil)
-	_ ast.VarDeclVisitor       = (*definitionVisitor)(nil)
-	_ ast.FuncDeclVisitor      = (*definitionVisitor)(nil)
-	_ ast.TypeDefDeclVisitor   = (*definitionVisitor)(nil)
-	_ ast.TypeAliasDeclVisitor = (*definitionVisitor)(nil)
-	_ ast.ImportStmtVisitor    = (*definitionVisitor)(nil)
-	_ ast.CastExprVisitor      = (*definitionVisitor)(nil)
+	_ ast.Visitor                = (*definitionVisitor)(nil)
+	_ ast.ConditionalVisitor     = (*definitionVisitor)(nil)
+	_ ast.VarDeclVisitor         = (*definitionVisitor)(nil)
+	_ ast.FuncDeclVisitor        = (*definitionVisitor)(nil)
+	_ ast.TypeDefDeclVisitor     = (*definitionVisitor)(nil)
+	_ ast.TypeAliasDeclVisitor   = (*definitionVisitor)(nil)
+	_ ast.ImportStmtVisitor      = (*definitionVisitor)(nil)
+	_ ast.CastExprVisitor        = (*definitionVisitor)(nil)
+	_ ast.CastAssigneableVisitor = (*definitionVisitor)(nil)
 )
 
 func (*definitionVisitor) Visitor() {}
@@ -192,6 +193,14 @@ func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.Visit
 }
 
 func (def *definitionVisitor) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
+	if helper.IsInRange(expr.Range, def.pos) && !helper.IsInRange(expr.Lhs.GetRange(), def.pos) {
+		def.gotoType(expr.TargetType)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
+func (def *definitionVisitor) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
 	if helper.IsInRange(expr.Range, def.pos) && !helper.IsInRange(expr.Lhs.GetRange(), def.pos) {
 		def.gotoType(expr.TargetType)
 		return ast.VisitBreak

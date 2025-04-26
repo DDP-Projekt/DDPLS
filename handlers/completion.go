@@ -273,7 +273,7 @@ func appendDotCompletion(items []protocol.CompletionItem, ident *ast.Ident, pos 
 		return items
 	}
 
-	structType := ident.Declaration.(*ast.VarDecl).Type.(*ddptypes.StructType)
+	structType := ddptypes.TrueUnderlying(ident.Declaration.(*ast.VarDecl).Type).(*ddptypes.StructType)
 	for _, field := range structType.Fields {
 		items = append(items, protocol.CompletionItem{
 			Kind:     ptr(protocol.CompletionItemKindField),

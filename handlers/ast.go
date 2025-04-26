@@ -169,6 +169,12 @@ func makeTreeNode(node ast.Node) TreeItem {
 		}
 
 		return NewNodeItem(node, node.TargetType.String(), children, "symbol-operator")
+	case *ast.CastAssigneable:
+		children := []TreeItem{
+			makeTreeNode(node.Lhs),
+		}
+
+		return NewNodeItem(node, node.TargetType.String(), children, "symbol-operator")
 	case *ast.TypeOpExpr:
 		return NewNodeItem(node, node.Operator.String(), nil, "symbol-operator")
 	case *ast.TypeCheck:

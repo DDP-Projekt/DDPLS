@@ -173,6 +173,22 @@ func (h *hoverVisitor) VisitIdent(e *ast.Ident) ast.VisitResult {
 	return ast.VisitBreak
 }
 
+func (h *hoverVisitor) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
+	if helper.IsInRange(expr.Range, h.pos) && !helper.IsInRange(expr.Lhs.GetRange(), h.pos) {
+		h.typeHover(expr.Range, expr.TargetType)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
+func (h *hoverVisitor) VisitCastAssigneable(expr *ast.CastAssigneable) ast.VisitResult {
+	if helper.IsInRange(expr.Range, h.pos) && !helper.IsInRange(expr.Lhs.GetRange(), h.pos) {
+		h.typeHover(expr.Range, expr.TargetType)
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
 func (h *hoverVisitor) VisitFuncCall(e *ast.FuncCall) ast.VisitResult {
 	if len(e.Args) != 0 {
 		for _, expr := range e.Args {
@@ -389,9 +405,9 @@ func (h *hoverVisitor) typeHover(rang token.Range, typ ddptypes.Type) {
 	value := typ.String()
 	switch typ := typ.(type) {
 	case *ddptypes.StructType:
-		value += ":\n"
+		value += ":\n\n"
 		for _, field := range typ.Fields {
-			value += fmt.Sprintf("\t%s: %s\n", field.Name, field.Type.String())
+			value += fmt.Sprintf("\t\t%s: %s\n", field.Name, field.Type.String())
 		}
 	case *ddptypes.TypeAlias:
 		value += fmt.Sprintf(" (Alias für %s)", typ.Underlying.String())

@@ -50,6 +50,7 @@ var (
 	_ ast.TypeDefDeclVisitor   = (*definitionVisitor)(nil)
 	_ ast.TypeAliasDeclVisitor = (*definitionVisitor)(nil)
 	_ ast.ImportStmtVisitor    = (*definitionVisitor)(nil)
+	_ ast.CastExprVisitor      = (*definitionVisitor)(nil)
 )
 
 func (*definitionVisitor) Visitor() {}
@@ -185,6 +186,14 @@ func (def *definitionVisitor) VisitStructLiteral(e *ast.StructLiteral) ast.Visit
 			URI:   def.getUri(struc),
 			Range: helper.ToProtocolRange(struc.GetRange()),
 		}
+		return ast.VisitBreak
+	}
+	return ast.VisitRecurse
+}
+
+func (def *definitionVisitor) VisitCastExpr(expr *ast.CastExpr) ast.VisitResult {
+	if helper.IsInRange(expr.Range, def.pos) && !helper.IsInRange(expr.Lhs.GetRange(), def.pos) {
+		def.gotoType(expr.TargetType)
 		return ast.VisitBreak
 	}
 	return ast.VisitRecurse

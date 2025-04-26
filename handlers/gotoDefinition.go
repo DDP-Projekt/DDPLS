@@ -49,6 +49,7 @@ var (
 	_ ast.FuncDeclVisitor      = (*definitionVisitor)(nil)
 	_ ast.TypeDefDeclVisitor   = (*definitionVisitor)(nil)
 	_ ast.TypeAliasDeclVisitor = (*definitionVisitor)(nil)
+	_ ast.ImportStmtVisitor    = (*definitionVisitor)(nil)
 )
 
 func (*definitionVisitor) Visitor() {}
@@ -109,6 +110,34 @@ func (def *definitionVisitor) VisitTypeDefDecl(d *ast.TypeDefDecl) ast.VisitResu
 		def.gotoType(d.Underlying)
 		return ast.VisitBreak
 	}
+	return ast.VisitRecurse
+}
+
+func (def *definitionVisitor) VisitImportStmt(stmt *ast.ImportStmt) ast.VisitResult {
+	if helper.IsInRange(stmt.FileName.Range, def.pos) {
+		if stmt.SingleModule() == nil {
+			return ast.VisitBreak
+		}
+
+		def.location = &protocol.Location{
+			URI: protocol.DocumentUri(uri.FromPath(stmt.SingleModule().FileName)),
+		}
+		return ast.VisitBreak
+	}
+
+	for _, symbol := range stmt.ImportedSymbols {
+		if helper.IsInRange(symbol.Range, def.pos) {
+			if decl, ok, _ := def.docMod.Ast.Symbols.LookupDecl(symbol.Literal); ok {
+				def.location = &protocol.Location{
+					URI:   def.getUri(decl),
+					Range: helper.ToProtocolRange(decl.GetRange()),
+				}
+
+				return ast.VisitBreak
+			}
+		}
+	}
+
 	return ast.VisitRecurse
 }
 
@@ -185,7 +214,12 @@ func (def *definitionVisitor) gotoType(typ ddptypes.Type) {
 		return
 	}
 
-	decl, exists, _ := def.docMod.Ast.Symbols.LookupDecl(typ.String())
+	name := typ.String()
+	if structType, ok := typ.(*ddptypes.StructType); ok {
+		name = structType.Name
+	}
+
+	decl, exists, _ := def.docMod.Ast.Symbols.LookupDecl(name)
 	if !exists {
 		return
 	}

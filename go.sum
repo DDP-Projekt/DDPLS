@@ -1,7 +1,5 @@
-github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250415150359-50440e33363a h1:f0G19p/buRgtkMWKE0bn1jLnSc4M1TgkN5DSe8qiRA4=
-github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250415150359-50440e33363a/go.mod h1:1OiPJ68MnwUSjuB8zxVmhxRpb9eBe0sS3aia9F3akkg=
-github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250426140755-874b489b7f84 h1:AyEqx+fERSoJqxWL9ORdobS4AGHd8phY6nFgp0E9H0k=
-github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250426140755-874b489b7f84/go.mod h1:1OiPJ68MnwUSjuB8zxVmhxRpb9eBe0sS3aia9F3akkg=
+github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250511112909-599692ad1e0b h1:IbiCmXgmVMyYeC1AQ9jvNy3ixg3Z7lqpHW0n4sOpL0Q=
+github.com/DDP-Projekt/Kompilierer v0.6.1-0.20250511112909-599692ad1e0b/go.mod h1:1OiPJ68MnwUSjuB8zxVmhxRpb9eBe0sS3aia9F3akkg=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242 h1:83KQL7kA1eNW+aL43H3AkjRy1hSa8Okb14D2weULdEo=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242/go.mod h1:0mr4+bYwGddJfGuaxnUZBSxkshSzFOIyTmBRvfJDBo4=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=

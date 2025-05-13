@@ -96,12 +96,16 @@ func makeTreeNode(node ast.Node) TreeItem {
 	case *ast.Ident:
 		return NewNodeItem(node, node.Literal.Literal, nil, "symbol-variable")
 	case *ast.Indexing:
+		assertNode("Indexing.Lhs", node.Lhs)
+		assertNode("Indexing.Index", node.Index)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Lhs),
 			makeTreeNode(node.Index),
 		}, "symbol-array")
 
 	case *ast.FieldAccess:
+		assertNode("FieldAccess.Field", node.Field)
+		assertNode("FieldAccess.Rhs", node.Rhs)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Field),
 			makeTreeNode(node.Rhs),
@@ -118,6 +122,8 @@ func makeTreeNode(node ast.Node) TreeItem {
 		return NewNodeItem(node, node.Literal.Literal, nil, "symbol-string")
 	case *ast.ListLit:
 		if node.Count != nil {
+			assertNode("ListLit.Count", node.Count)
+			assertNode("ListLit.Value", node.Value)
 			return NewNodeItem(node, node.Type.String(), []TreeItem{
 				makeTreeNode(node.Count),
 				makeTreeNode(node.Value),
@@ -126,11 +132,13 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		vals := make([]TreeItem, 0)
 		for _, v := range node.Values {
+			assertNode("ListLit.Values.Value", v)
 			vals = append(vals, makeTreeNode(v))
 		}
 
 		return NewNodeItem(node, node.Type.String(), vals, "symbol-array")
 	case *ast.UnaryExpr:
+		assertNode("UnaryExpr.Rhs", node.Rhs)
 		children := []TreeItem{
 			makeTreeNode(node.Rhs),
 		}
@@ -140,6 +148,8 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, node.Operator.String(), children, "symbol-operator")
 	case *ast.BinaryExpr:
+		assertNode("BinaryExpr.Lhs", node.Lhs)
+		assertNode("BinaryExpr.Rhs", node.Rhs)
 		children := []TreeItem{
 			makeTreeNode(node.Lhs),
 			makeTreeNode(node.Rhs),
@@ -150,6 +160,9 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, node.Operator.String(), children, "symbol-operator")
 	case *ast.TernaryExpr:
+		assertNode("TernaryExpr.Lhs", node.Lhs)
+		assertNode("TernaryExpr.Mid", node.Mid)
+		assertNode("TernaryExpr.Rhs", node.Rhs)
 		children := []TreeItem{
 			makeTreeNode(node.Lhs),
 			makeTreeNode(node.Mid),
@@ -161,6 +174,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, node.Operator.String(), children, "symbol-operator")
 	case *ast.CastExpr:
+		assertNode("CastExpr.Lhs", node.Lhs)
 		children := []TreeItem{
 			makeTreeNode(node.Lhs),
 		}
@@ -170,6 +184,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, node.TargetType.String(), children, "symbol-operator")
 	case *ast.CastAssigneable:
+		assertNode("CastAssigneable.Lhs", node.Lhs)
 		children := []TreeItem{
 			makeTreeNode(node.Lhs),
 		}
@@ -178,17 +193,20 @@ func makeTreeNode(node ast.Node) TreeItem {
 	case *ast.TypeOpExpr:
 		return NewNodeItem(node, node.Operator.String(), nil, "symbol-operator")
 	case *ast.TypeCheck:
+		assertNode("TypeCheck.Lhs", node.Lhs)
 		return NewNodeItem(node, node.CheckType.String(), []TreeItem{
 			makeTreeNode(node.Lhs),
 		}, "symbol-operator")
 
 	case *ast.Grouping:
+		assertNode("TypeCheck.Grouping", node.Expr)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Expr),
 		}, "symbol-namespace")
 	case *ast.FuncCall:
 		args := make([]TreeItem, 0)
 		for _, v := range node.Args {
+			assertNode("FuncCall.Args.Arg", v)
 			args = append(args, makeTreeNode(v))
 		}
 
@@ -196,6 +214,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 	case *ast.StructLiteral:
 		args := make([]TreeItem, 0)
 		for _, v := range node.Args {
+			assertNode("StructLiteral.Args.Arg", v)
 			args = append(args, makeTreeNode(v))
 		}
 
@@ -204,12 +223,14 @@ func makeTreeNode(node ast.Node) TreeItem {
 	case *ast.BadDecl:
 		return NewNodeItem(node, node.Err.Msg, nil, "error")
 	case *ast.ConstDecl:
+		assertNode("ConstDecl.Val", node.Val)
 		return NewNodeItem(node, node.Name(), []TreeItem{
 			makeTreeNode(node.Val),
 			NewDataItem("Type", node.Type.String(), nil),
 			NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil),
 		}, "symbol-constant")
 	case *ast.VarDecl:
+		assertNode("VarDecl.InitVal", node.InitVal)
 		children := []TreeItem{
 			makeTreeNode(node.InitVal),
 		}
@@ -244,6 +265,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 		children = append(children, NewDataItem("Aliase", "", aliase))
 		children = append(children, NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil))
 		children = append(children, NewDataItem("IsExternVisible", fmt.Sprintf("%v", node.IsExternVisible), nil))
+		children = append(children, NewDataItem("IsGeneric", fmt.Sprintf("%v", ast.IsGeneric(node)), nil))
 
 		if node.Body == nil {
 			children = append(children, NewDataItem("ExternFile", node.ExternFile.Literal, nil))
@@ -257,18 +279,32 @@ func makeTreeNode(node ast.Node) TreeItem {
 			return NewNodeItem(node, node.Name(), children, "symbol-function")
 		}
 
-		children = append(children, makeTreeNode(node.Body))
+		if ast.IsGeneric(node) {
+			for _, decls := range node.Generic.Instantiations {
+				for _, decl := range decls {
+					assertNode("FuncDecl.Generic.Instantiations[i]", decl)
+					children = append(children, makeTreeNode(decl))
+				}
+			}
+		} else {
+			assertNode("FuncDecl.Body", node.Body)
+			children = append(children, makeTreeNode(node.Body))
+		}
 
 		return NewNodeItem(node, node.Name(), children, "symbol-function")
 	case *ast.FuncDef:
+		assertNode("FuncDef.Body", node.Body)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Body),
 		}, "symbol-function")
 	case *ast.StructDecl:
 		children := make([]TreeItem, 0)
 
-		for _, v := range node.Fields {
-			children = append(children, makeTreeNode(v))
+		if !ast.IsGeneric(node) {
+			for _, v := range node.Fields {
+				assertNode("StructDecl.Fields.Field", v)
+				children = append(children, makeTreeNode(v))
+			}
 		}
 
 		aliase := make([]TreeItem, 0)
@@ -285,6 +321,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 		}
 		children = append(children, NewDataItem("Aliase", "", aliase))
 		children = append(children, NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil))
+		children = append(children, NewDataItem("IsGeneric", fmt.Sprintf("%v", ast.IsGeneric(node)), nil))
 
 		return NewNodeItem(node, node.Name(), children, "symbol-struct")
 	case *ast.TypeAliasDecl:
@@ -302,6 +339,7 @@ func makeTreeNode(node ast.Node) TreeItem {
 			makeTreeNode(node.Decl),
 		}, "symbol-class")
 	case *ast.ExprStmt:
+		assertNode("ExprStmt.Expr", node.Expr)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Expr),
 		}, "symbol-misc")
@@ -319,6 +357,8 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, node.FileName.Literal, imports, "library")
 	case *ast.AssignStmt:
+		assertNode("AssignStmt.Var", node.Var)
+		assertNode("AssignStmt.Rhs", node.Rhs)
 		return NewNodeItem(node, node.RhsType.String(), []TreeItem{
 			makeTreeNode(node.Var),
 			makeTreeNode(node.Rhs),
@@ -331,6 +371,8 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, "", children, "symbol-namespace")
 	case *ast.IfStmt:
+		assertNode("IfStmt.Condition", node.Condition)
+		assertNode("IfStmt.Then", node.Then)
 		children := []TreeItem{
 			makeTreeNode(node.Condition),
 			makeTreeNode(node.Then),
@@ -341,11 +383,17 @@ func makeTreeNode(node ast.Node) TreeItem {
 
 		return NewNodeItem(node, "", children, "repo-forked")
 	case *ast.WhileStmt:
+		assertNode("WhileStmt.Condition", node.Condition)
+		assertNode("WhileStmt.Body", node.Body)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Condition),
 			makeTreeNode(node.Body),
 		}, "sync")
 	case *ast.ForStmt:
+		assertNode("ForStmt.Initializer", node.Initializer)
+		assertNode("ForStmt.To", node.To)
+		assertNode("ForStmt.StepSize", node.StepSize)
+		assertNode("ForStmt.Body", node.Body)
 		return NewNodeItem(node, "", []TreeItem{
 			makeTreeNode(node.Initializer),
 			makeTreeNode(node.To),
@@ -353,6 +401,9 @@ func makeTreeNode(node ast.Node) TreeItem {
 			makeTreeNode(node.Body),
 		}, "sync")
 	case *ast.ForRangeStmt:
+		assertNode("ForRangeStmt.Initializer", node.Initializer)
+		assertNode("ForRangeStmt.In", node.In)
+		assertNode("ForRangeStmt.Body", node.Body)
 		children := []TreeItem{
 			makeTreeNode(node.Initializer),
 			makeTreeNode(node.In),
@@ -378,4 +429,10 @@ func makeTreeNode(node ast.Node) TreeItem {
 	}
 
 	return NewNodeItem(node, "This node has not been implemented", nil, "question")
+}
+
+func assertNode(context string, node ast.Node) {
+	if node == nil {
+		panic(fmt.Sprintf("%s was nil", context))
+	}
 }

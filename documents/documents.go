@@ -2,40 +2,37 @@ package documents
 
 import (
 	"fmt"
-	"io/fs"
 	"maps"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 
 	"github.com/DDP-Projekt/DDPLS/uri"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
 	"github.com/DDP-Projekt/Kompilierer/src/ddperror"
-	"github.com/DDP-Projekt/Kompilierer/src/ddppath"
 	"github.com/DDP-Projekt/Kompilierer/src/parser"
 )
 
 var preparsed_duden map[string]*ast.Module
 
 func init() {
-	preparsed_duden = make(map[string]*ast.Module)
-	filepath.WalkDir(ddppath.Duden, func(path string, d fs.DirEntry, err error) error {
-		if d == nil || d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".ddp" {
-			return nil
-		}
-		mod, err := parser.Parse(parser.Options{
-			FileName: path,
-			Modules:  preparsed_duden,
-		})
-		if err != nil {
-			return err
-		}
-		preparsed_duden[mod.FileName] = mod
-		return nil
-	})
+	// preparsed_duden = make(map[string]*ast.Module)
+	// filepath.WalkDir(ddppath.Duden, func(path string, d fs.DirEntry, err error) error {
+	// 	if d == nil || d.IsDir() {
+	// 		return nil
+	// 	}
+	// 	if filepath.Ext(path) != ".ddp" {
+	// 		return nil
+	// 	}
+	// 	mod, err := parser.Parse(parser.Options{
+	// 		FileName: path,
+	// 		Modules:  preparsed_duden,
+	// 	})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	preparsed_duden[mod.FileName] = mod
+	// 	return nil
+	// })
 }
 
 // represents the state of a single document

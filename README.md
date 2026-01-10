@@ -1,12 +1,12 @@
 # DDPLS
-Der Language Server [der Deutschen Programmiersprache](https://github.com/DDP-Projekt/Kompilierer). 
-Mit einem Language Server ist es möglich IDE's zu erweitern, um DDP zu unterstützen.
+Der Sprach-Server [der Deutschen Programmiersprache](https://github.com/DDP-Projekt/Kompilierer). 
+Mit einem Sprach-Server ist es möglich IDE's zu erweitern, um DDP zu unterstützen.
 
-## Features
+## Funktionen
 <!-- TOC -->
 - [DDPLS](#ddpls)
-	- [Features](#features)
-		- [Syntax highlighting](#syntax-highlighting)
+	- [Funktionen](#funktionen)
+		- [Syntaxhervorhebung](#Syntaxhervorhebung)
 		- [Diagnose Informationen](#diagnose-informationen)
 		- [Hover](#hover)
 			- [Über einer Variable](#über-einer-variable)
@@ -17,13 +17,13 @@ Mit einem Language Server ist es möglich IDE's zu erweitern, um DDP zu unterst�
 		- [Variablen Hervorhebung](#variablen-hervorhebung)
 <!-- TOC -->
 
-### Syntax highlighting
-Der Language server vergibt je nach Kontext, bestimmten Bereichen des Quellcodes Attribute<br>
-So können erweiterungen die Attribute des Language Servers benutzen, um diesen Textabschnitten verschiedene Farben zu vergeben.
+### Syntaxhervorhebung
+Der Sprach-Server vergibt je nach Kontext, bestimmten Bereichen des Quellcodes Attribute<br>
+So können erweiterungen die Attribute des Sprach-Servers benutzen, um diesen Textabschnitten verschiedene Farben zu vergeben.
 ![highlighting img](https://i.imgur.com/DZIJ4pd.png)
 
 ### Diagnose Informationen
-Der Language server schickt Fehlermeldungen des Kompilierers an die Erweiterung, sodass sie dem Nutzer angezeigt werden kann.
+Der Sprach-Server schickt Fehlermeldungen des Kompilierers an die Erweiterung, sodass sie dem Nutzer angezeigt werden kann.
 
 ### Hover
 Zeigt die Variablen-/Funktionsdeklaration und ihrer Position, wenn die Maus über eine Variable oder einen Funktionsaufruf schwebt.
@@ -41,7 +41,7 @@ Peek definition erlaubt dem Nutzer schnell eine Variablen- oder Funktionsdeklara
 ![go to def img](https://i.imgur.com/9edLyuO.png)
 
 ### Vorschläge
-Während dem Tippen kann der Language Server dir Vorschläge für Schlüsselwörter, Typen, Funktionen und Variablen geben.
+Während dem Tippen kann der Sprach-Server dir Vorschläge für Schlüsselwörter, Typen, Funktionen und Variablen geben.
 ![completion img](https://i.imgur.com/HbjB9pQ.png)
 
 ### Umbennenen

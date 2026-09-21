@@ -7,7 +7,6 @@ import (
 	"github.com/DDP-Projekt/DDPLS/documents"
 	"github.com/DDP-Projekt/DDPLS/helper"
 	"github.com/DDP-Projekt/Kompilierer/src/ast"
-	"github.com/DDP-Projekt/Kompilierer/src/ddptypes"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -194,7 +193,11 @@ func makeTreeNode(node ast.Node) TreeItem {
 		return NewNodeItem(node, node.Operator.String(), nil, "symbol-operator")
 	case *ast.TypeCheck:
 		assertNode("TypeCheck.Lhs", node.Lhs)
-		return NewNodeItem(node, node.CheckType.String(), []TreeItem{
+		typeName := "<invalid type>"
+		if (node.CheckType != nil) {
+			typeName = node.CheckType.String()
+		}
+		return NewNodeItem(node, typeName, []TreeItem{
 			makeTreeNode(node.Lhs),
 		}, "symbol-operator")
 
@@ -230,6 +233,9 @@ func makeTreeNode(node ast.Node) TreeItem {
 			NewDataItem("IsPublic", fmt.Sprintf("%v", node.IsPublic), nil),
 		}, "symbol-constant")
 	case *ast.VarDecl:
+		if node.InitVal == nil {
+			break
+		}
 		assertNode("VarDecl.InitVal", node.InitVal)
 		children := []TreeItem{
 			makeTreeNode(node.InitVal),
@@ -250,15 +256,18 @@ func makeTreeNode(node ast.Node) TreeItem {
 		for _, v := range node.Aliases {
 			params := make([]TreeItem, 0)
 			for paramName, paramType := range v.Args {
-				if paramType.IsReference && ddptypes.IsAny(paramType.Type) {
-					continue // TODO remove after fix 9d13193bdc4e3a563f24565540243a2631d2824a is merged
-				}
 				params = append(params, NewDataItem(paramName, paramType.String(), nil))
+			}
+
+			tokens := make([]TreeItem, 0)
+			for _, token := range v.Tokens {
+				tokens = append(tokens, NewDataItem(token.Literal, token.Type.String(), nil))
 			}
 
 			aliase = append(aliase, NewDataItem("Alias", node.Name(), []TreeItem{
 				NewDataItem("Negated", fmt.Sprintf("%v", v.Negated), nil),
 				NewDataItem("Params", "", params),
+				NewDataItem("Tokens", "", tokens),
 			}))
 
 		}

@@ -259,15 +259,9 @@ func makeTreeNode(node ast.Node) TreeItem {
 				params = append(params, NewDataItem(paramName, paramType.String(), nil))
 			}
 
-			tokens := make([]TreeItem, 0)
-			for _, token := range v.Tokens {
-				tokens = append(tokens, NewDataItem(token.Literal, token.Type.String(), nil))
-			}
-
 			aliase = append(aliase, NewDataItem("Alias", node.Name(), []TreeItem{
 				NewDataItem("Negated", fmt.Sprintf("%v", v.Negated), nil),
 				NewDataItem("Params", "", params),
-				NewDataItem("Tokens", "", tokens),
 			}))
 
 		}

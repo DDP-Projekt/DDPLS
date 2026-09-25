@@ -18,32 +18,52 @@ func CreateTextDocumentFormatting(dm *documents.DocumentManager) protocol.TextDo
 			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
 		}
 
-		if len(doc.Content) == 0 {
-			return make([]protocol.TextEdit, 0), nil
-		}
-
 		docRange := fullDocumentRange(doc.Content)
 
-		spaces := false
-		if insertSpaces, exists := params.Options["insertSpaces"]; exists && insertSpaces == true {
-			spaces = true
-		}
-
-		opts := formatierer.FormattingOptions{
-			InsertSpaces: spaces,
-		}
-		newText, err := formatierer.GetFormattedDocument(doc.Content, doc.Module, opts)
-		if err != nil {
-			return nil, fmt.Errorf("Error formatting document '%s': %w", params.TextDocument.URI, err)
-		}
-
-		return []protocol.TextEdit{
-			{
-				Range:   docRange,
-				NewText: newText,
-			},
-		}, nil
+		return format(doc, &protocol.DocumentRangeFormattingParams{
+			TextDocument:           params.TextDocument,
+			Range:                  docRange,
+			Options:                params.Options,
+			WorkDoneProgressParams: params.WorkDoneProgressParams,
+		})
 	})
+}
+
+func CreateTextDocumentRangeFormatting(dm *documents.DocumentManager) protocol.TextDocumentRangeFormattingFunc {
+	return RecoverAnyErr(func(context *glsp.Context, params *protocol.DocumentRangeFormattingParams) ([]protocol.TextEdit, error) {
+		doc, ok := dm.Get(params.TextDocument.URI)
+		if !ok {
+			return nil, fmt.Errorf("document not found %s", params.TextDocument.URI)
+		}
+
+		return format(doc, params)
+	})
+}
+
+func format(doc *documents.DocumentState, params *protocol.DocumentRangeFormattingParams) ([]protocol.TextEdit, error) {
+	if len(doc.Content) == 0 {
+		return make([]protocol.TextEdit, 0), nil
+	}
+
+	spaces := false
+	if insertSpaces, exists := params.Options["insertSpaces"]; exists && insertSpaces == true {
+		spaces = true
+	}
+
+	opts := formatierer.FormattingOptions{
+		InsertSpaces: spaces,
+	}
+	newText, err := formatierer.GetFormattedDocument(doc.Content, doc.Module, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error formatting document '%s': %w", params.TextDocument.URI, err)
+	}
+
+	return []protocol.TextEdit{
+		{
+			Range:   params.Range,
+			NewText: newText[params.Range.Start.IndexIn(newText):params.Range.End.EndOfLineIn(newText).IndexIn(newText)],
+		},
+	}, nil
 }
 
 func fullDocumentRange(content string) protocol.Range {

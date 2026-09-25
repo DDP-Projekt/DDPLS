@@ -1,9 +1,13 @@
-github.com/DDP-Projekt/Kompilierer v1.0.0 h1:abQwM7cW71GSs7YsZs6XvjJQ6MKrGDotJaZ5mWYIsZ4=
-github.com/DDP-Projekt/Kompilierer v1.0.0/go.mod h1:1OiPJ68MnwUSjuB8zxVmhxRpb9eBe0sS3aia9F3akkg=
+github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291 h1:qwymeR02OzvayaUzf10GnemFZDhLwIeHtjGX7lVeOl0=
+github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291/go.mod h1:VXQ77FX/dUwXMW7Zfaeul03iQ2QG+qeK/HsjZjbQpoI=
+github.com/DDP-Projekt/Kompilierer v1.0.1-0.20260922162106-757d141aca39 h1:NWfJjQOspqTJ1tgBiMekeZ4iPR/6yeh/vN9bgojzGL0=
+github.com/DDP-Projekt/Kompilierer v1.0.1-0.20260922162106-757d141aca39/go.mod h1:ppZivmuYXtD46ApL+no12FBZpL1ovgXE3VTflbYMRZY=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242 h1:83KQL7kA1eNW+aL43H3AkjRy1hSa8Okb14D2weULdEo=
 github.com/DDP-Projekt/glsp v0.0.0-20250316162922-69bd2a0d2242/go.mod h1:0mr4+bYwGddJfGuaxnUZBSxkshSzFOIyTmBRvfJDBo4=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
+github.com/aymanbagabas/go-udiff v0.4.1 h1:OEIrQ8maEeDBXQDoGCbbTTXYJMYRCRO1fnodZ12Gv5o=
+github.com/aymanbagabas/go-udiff v0.4.1/go.mod h1:0L9PGwj20lrtmEMeyw4WKJ/TMyDtvAoK9bf2u/mNo3w=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

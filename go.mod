@@ -1,16 +1,13 @@
 module github.com/DDP-Projekt/DDPLS
 
-go 1.26.8
+go 1.27.1
 
 require (
-	github.com/DDP-Projekt/Formatierer v0.0.0-20260921100118-073b06bf9cf0
-	github.com/DDP-Projekt/Kompilierer v1.0.0
+	github.com/DDP-Projekt/Formatierer v0.0.0-20260921161902-681e2b175291
+	github.com/DDP-Projekt/Kompilierer v1.0.1-0.20260922162106-757d141aca39
 	github.com/tliron/commonlog v0.2.18
 	github.com/tliron/glsp v0.2.2-0.20240309182338-ab78d718ad7d
 )
-
-replace github.com/DDP-Projekt/Formatierer => /home/leon/repos/Formatierer
-replace github.com/DDP-Projekt/Kompilierer => /home/leon/repos/Kompilierer
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect

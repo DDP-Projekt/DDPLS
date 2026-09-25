@@ -32,7 +32,10 @@ func CreateTextDocumentFormatting(dm *documents.DocumentManager) protocol.TextDo
 		opts := formatierer.FormattingOptions{
 			InsertSpaces: spaces,
 		}
-		newText := formatierer.GetFormattedDocument(doc.Content, *doc.Module, opts)
+		newText, err := formatierer.GetFormattedDocument(doc.Content, doc.Module, opts)
+		if err != nil {
+			return nil, fmt.Errorf("Error formatting document '%s': %w", params.TextDocument.URI, err)
+		}
 
 		return []protocol.TextEdit{
 			{

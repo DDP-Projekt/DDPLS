@@ -56,6 +56,8 @@ func NewDDPLS(ctx context.Context) *DDPLS {
 		TextDocumentRename:              handlers.CreateTextDocumentRename(ls.dm),
 		TextDocumentPrepareRename:       handlers.CreateTextDocumentPrepareRename(ls.dm),
 		TextDocumentDocumentHighlight:   handlers.CreateTextDocumentDocumentHighlight(ls.dm),
+		TextDocumentFormatting:          handlers.CreateTextDocumentFormatting(ls.dm),
+		TextDocumentRangeFormatting:     handlers.CreateTextDocumentRangeFormatting(ls.dm),
 		CustomRequest:                   CustomRequests,
 	}
 
